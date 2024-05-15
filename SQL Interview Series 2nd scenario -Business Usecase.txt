@@ -1,0 +1,76 @@
+2nd Scenario - Business Usecase
+Q. find business date between create date and resolved data by excluding weekends and public holiday
+
+script:
+create table tickets
+(
+ticket_id varchar(10),
+create_date date,
+resolved_date date
+);
+delete from tickets;
+insert into tickets values
+(1,'2022-08-01','2022-08-03')
+,(2,'2022-08-01','2022-08-12')
+,(3,'2022-08-01','2022-08-16');
+
+create table holidays
+(
+holiday_date date
+,reason varchar(100)
+);
+delete from holidays;
+insert into holidays values
+('2022-08-11','Rakhi'),('2022-08-15','Independence day');
+use youtube
+select * from tickets;
+select * from holidays;
+
+insert into holidays values ('2022-08-14','Pre Independence day')
+
+PostgreSQL
+----------------------------- Ans - with out considering holiday on weekend
+with holiday_cal as(
+select *, (resolved_date - create_date) as actual_days , 
+extract('week' from resolved_date) -  extract('week' from create_date) as week_diff
+from tickets t
+left join holidays h
+on h.holiday_date between t.create_date and t.resolved_date
+)
+select create_date , resolved_date , (resolved_date - create_date - 2*week_diff - count(reason)) as business_days
+from holiday_cal
+group by create_date , resolved_date ,week_diff
+
+
+
+------now take considerarion of scenario if holiday comes on weekends
+
+select create_date ,resolved_date , (resolved_date - create_date - 2*week_diff -count(holiday_date)) as bus_days
+from
+(
+select *, (resolved_date - create_date) as actual_days , 
+extract('week' from resolved_date) -  extract('week' from create_date) as week_diff
+,to_char(h.holiday_date,'day')	as day_
+--,case when to_char(h.holiday_date,'day') in ('sunday','saturday') then 1 else 0 end as holiday_on_weekend
+from tickets t
+left join holidays h
+on h.holiday_date between t.create_date and t.resolved_date
+--and (TO_CHAR(holiday_date, 'Day') not in  ('saturday', 'sunday'))
+and extract (dow from h.holiday_date) not in (0,6)
+)a
+group by create_date ,resolved_date ,week_diff
+
+
+
+MySQL Workbench
+--------------
+select create_date , resolved_date, actual_days - (2 * week_diff) - total_holidays as business_days ,actual_days ,week_diff ,total_holidays
+from (
+select t.create_date ,t.resolved_date , datediff(resolved_date,create_date) as actual_days , week(resolved_date) -week(create_date) as week_diff, 
+count(h.holiday_date) as total_holidays 
+from tickets t
+left join holidays h
+on h.holiday_date between t.create_date and t.resolved_date
+and dayname(h.holiday_date) not in ('Saturday' , 'Sunday' )
+group by t.create_date ,t.resolved_date
+)a
