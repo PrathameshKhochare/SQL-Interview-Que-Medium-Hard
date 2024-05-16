@@ -1,0 +1,58 @@
+---Scenario 3  Amazon interview que
+--q. Total no of people present inside the hospital
+--o/p -   2,3,4
+
+create table hospital ( emp_id int
+, action varchar(10)
+, time timestamp);
+
+insert into hospital values ('1', 'in', '2019-12-22 09:00:00');
+insert into hospital values ('1', 'out', '2019-12-22 09:15:00');
+insert into hospital values ('2', 'in', '2019-12-22 09:00:00');
+insert into hospital values ('2', 'out', '2019-12-22 09:15:00');
+insert into hospital values ('2', 'in', '2019-12-22 09:30:00');
+insert into hospital values ('3', 'out', '2019-12-22 09:00:00');
+insert into hospital values ('3', 'in', '2019-12-22 09:15:00');
+insert into hospital values ('3', 'out', '2019-12-22 09:30:00');
+insert into hospital values ('3', 'in', '2019-12-22 09:45:00');
+insert into hospital values ('4', 'in', '2019-12-22 09:45:00');
+insert into hospital values ('5', 'out', '2019-12-22 09:40:00');
+ 
+select * from hospital
+------------
+--Approch - people present inside means last timestamp should be as 'in' (inside)
+---  we will give rank as per each emp with his/her last record in desc manner
+
+select emp_id
+from
+(
+select * ,rank() over(partition by emp_id order by time desc) as last_record
+from hospital
+)a
+where last_record = 1 and action = 'in'
+
+------------------ or
+select emp_id
+from
+(
+select emp_id,
+max(case when action = 'in' then time end) as in_,
+max(case when action = 'out' then time end) as out_	
+from hospital
+group by emp_id 
+--having max(case when action = 'in' then time end) > max(case when action = 'out' then time end)	or max(case when action = 'out' then time end) is null
+order by emp_id 
+)a
+where in_ > out_ or out_ is null
+
+---------------------------------- or   (last transaction = in action)
+
+with latest_time as(
+	select emp_id , max(time) as last_transcation_time from hospital group by emp_id)
+, latest_in_time as(
+    select emp_id , max(time) as last_in_transcation_time from hospital where action = 'in' group by emp_id)
+select latest_in_time.emp_id
+from latest_time
+inner join latest_in_time on latest_time.emp_id = latest_in_time.emp_id
+where latest_in_time = latest_time
+order by emp_id
