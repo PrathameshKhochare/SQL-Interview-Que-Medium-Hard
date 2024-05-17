@@ -1,0 +1,72 @@
+--Senario 4 - Airbnb Interview que
+--Q. room types that are searched most no of times.
+-- o/p room type and no of searches
+
+script:
+create table airbnb_searches 
+(
+user_id int,
+date_searched date,
+filter_room_types varchar(200)
+);
+
+delete from airbnb_searches;
+
+insert into airbnb_searches values
+(1,'2022-01-01','entire home,private room')
+,(2,'2022-01-02','entire home,shared room')
+,(3,'2022-01-02','private room,shared room')
+,(4,'2022-01-03','private room')
+
+----------------------------------
+
+select * from airbnb_searches
+
+with cte as(
+select user_id,
+sum(case when filter_room_types like '%entire%' then 1 end) as Entire_home,
+sum(case when filter_room_types like '%private%' then 1 end) as private,
+sum(case when filter_room_types like '%shared%' then 1 end) as Shared
+from airbnb_searches
+group by user_id
+)
+select value, count(value) as total_searches
+from(
+SELECT
+  CASE WHEN Entire_home = 1 THEN 'Entire_home' END AS value
+FROM
+  cte
+union all
+SELECT
+  CASE WHEN Shared = 1 THEN 'Shared' END AS value
+FROM
+  cte
+union all
+SELECT
+  CASE WHEN private = 1 THEN 'private' END AS value
+FROM
+  cte) as A
+where value is not null  
+group by value
+order by total_searches desc
+
+------------------------------------or
+logic -
+select * from unnest(string_to_array('entire home,private room',','))
+
+select unnest(string_to_array(filter_room_types,',')) as room_type ,count(*) as no_of_searches
+from airbnb_searches
+group by unnest(string_to_array(filter_room_types,','))
+order by no_of_searches desc
+
+------------------------------- or
+
+with cte as(
+select *, 
+unnest(string_to_array(filter_room_types, ',')) as room_type
+from airbnb_searches
+)
+select distinct room_type , count(room_type) as total_rooms
+from cte
+group by room_type
+order by total_rooms desc
