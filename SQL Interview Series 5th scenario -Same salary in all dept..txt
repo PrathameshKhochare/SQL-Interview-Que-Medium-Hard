@@ -1,0 +1,64 @@
+--Scenario - 5 -  SQL interview que for senior data engineer
+-- Q. - return all emp whose salary is same in all dept
+
+script:
+CREATE TABLE emp_salary
+(
+    emp_id INTEGER  NOT NULL,
+    name VARCHAR(20)  NOT NULL,
+    salary VARCHAR(30),
+    dept_id INTEGER
+);
+
+
+INSERT INTO emp_salary
+(emp_id, name, salary, dept_id)
+VALUES(101, 'sohan', '3000', '11'),
+(102, 'rohan', '4000', '12'),
+(103, 'mohan', '5000', '13'),
+(104, 'cat', '3000', '11'),
+(105, 'suresh', '4000', '12'),
+(109, 'mahesh', '7000', '12'),
+(108, 'kamal', '8000', '11');
+
+select * from emp_salary
+
+---------------- using subquery
+select name
+from (
+select * , count(emp_id) over(partition by dept_id , salary ) as total_count
+from emp_salary
+)a
+where total_count >1
+
+---------------------------------------(window function)
+with cte as
+(
+select * , dense_rank() over(partition by dept_id order by salary desc) as rn_
+from emp_salary
+)
+select a.emp_id ,a.name , a.salary, a.dept_id
+from cte a join cte b
+on a.name <> b.name and a.salary = b.salary and a.rn_ = b.rn_
+
+----------------------------------------------------------------------- or (self join)
+select distinct e.emp_id , e.name , e.salary ,e.dept_id
+from emp_salary e
+join emp_salary f 
+on e.dept_id = f.dept_id and e.salary = f.salary and e.name != f.name
+--where e.name != f.name
+order by e.dept_id
+
+--------------------------- or (inner join)
+with filtered_emp as(
+select dept_id , salary , count(emp_id) as cnt
+from emp_salary
+group by dept_id , salary
+having count(emp_id) > 1
+)
+select e.*
+from emp_salary e
+join filtered_emp f
+on e.dept_id = f.dept_id and e.salary = f.salary
+order by e.dept_id
+
