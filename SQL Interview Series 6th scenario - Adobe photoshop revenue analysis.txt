@@ -1,0 +1,33 @@
+-- Scenario 6 - Datalemur - photoshop revenue analysis
+--Q. for every customer that bought photoshop, return a list of customers and total spend on all the products except for photoshop prod
+
+
+create table adobe_transactions(customer_id int, product varchar(25), revenue int);
+
+insert into adobe_transactions values
+(123,'Photoshop',50),(123,'Premier Pro',100),(123,'After Effects',50),(234,'Illustrator',200),(234,'Premier Pro',100);
+
+select * from adobe_transactions;
+
+/* logic - as we have to 1st select all records where product is photoshop 
+, and within this we further calculate sum(revenue) where product is other than photoshop
+1.we can use subquery to get all records for photoshop and on basis of this we calculate sum(revenue) for other products
+2. we can use exist operator too.
+*/
+
+------------------------------------- using exist operator
+select customer_id ,sum(revenue)
+from adobe_transactions a
+where exists
+(select 1
+from adobe_transactions b
+where product = 'Photoshop'
+and  a.customer_id = b.customer_id)
+and product != 'Photoshop'
+group by customer_id
+
+-------------------------------- using subquery
+select customer_id ,sum(revenue)
+from adobe_transactions
+where customer_id in (select customer_id from adobe_transactions where product = 'Photoshop') and product != 'Photoshop'
+group by customer_id
