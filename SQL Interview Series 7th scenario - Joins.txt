@@ -1,0 +1,39 @@
+Scenario 7 - SQL interview que on diff joins
+Q. If 1 table has 5 records and 2nd table has 10 records , what should be values in those tables to get max and min records for each joins.
+
+----- ans
+--for min
+table 1 - table 2
+1            1
+1            1
+1            1
+1            1
+1            1
+             1
+	     1
+	     1
+	     1
+	     1
+			 
+inner  - 50 records	
+left  - 50 records	
+right  - 50 records	
+full  - 50 records	
+
+--for max
+table 1 - table 2
+1            2
+1            2
+1            2
+1            2
+1            2
+             2
+	     2
+	     2
+	     2
+	     2
+			 
+inner  - 0 records	
+left  - 5 records	
+right  - 10 records	
+full  - 15 records		
