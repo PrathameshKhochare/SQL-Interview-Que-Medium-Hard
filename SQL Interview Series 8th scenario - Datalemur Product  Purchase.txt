@@ -1,0 +1,45 @@
+-- Scenario 8 Dataleamour Tricky SQL Interview Problem with a Simple Solution | Data Analytics
+--Q. no of users who purchase the same prod on two or more diff days. output the unique no of users
+
+create table purchases(
+	user_id int,
+	product_id int,
+	quantity int,
+	purchase_date date
+);
+
+insert into purchases values(536, 3223, 6, '01/11/2022');
+insert into purchases values(827, 3585, 35, '02/20/2022');
+insert into purchases values(536, 3223, 5, '03/02/2022'); 
+insert into purchases values(536, 1435, 10, '03/02/2022');
+insert into purchases values(827, 2452, 45, '04/09/2022');
+
+select * from purchases
+
+-- same prod on 2 or more diff days - means grouping by user_id ,product_id and ranking ,if rank > 1 means same prod on diff days
+select distinct user_id from (
+select *, rank() over(partition by user_id ,product_id order by purchase_date) as rn
+from purchases
+)a purchases
+where rn > 1
+
+---- using self join (merge on user_id ,product_id and 2nd date > 1st date)
+select p.user_id
+from purchases p
+join purchases q
+on p.user_id = q.user_id and p.product_id = q.product_id and p.purchase_date < q.purchase_date
+
+
+------------------------- using self join (merge on user_id ,product_id and 2nd date <> 1st date)
+select user_id from (
+select p.user_id , count(p.product_id) from purchases p
+join purchases q
+on p.user_id = q.user_id and p.product_id = q.product_id and p.purchase_date <> q.purchase_date
+group by p.user_id 
+)a
+---------------------------------------------- or using having
+select distinct user_id from (
+select user_id , product_id , count(purchase_date) as total_purchase
+from purchases
+group by user_id , product_id
+having count(purchase_date) > 1)a
