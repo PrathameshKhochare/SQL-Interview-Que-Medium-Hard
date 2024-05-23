@@ -1,0 +1,51 @@
+-- Scenario 11 LNT sql interview
+-- Q. print highest and lowest salary in each dept
+
+script:
+create table employee 
+(
+emp_name varchar(10),
+dep_id int,
+salary int
+);
+
+delete from employee;
+
+insert into employee values 
+('Siva',1,30000),('Ravi',2,40000),('Prasad',1,50000),('Sai',2,20000)
+
+----------------------------
+select * from employee
+
+/* rank the emp based on high and low salary for each dept 
+and then use case statement to get emp_name of high and low sal emp
+*/
+------------------- using rank()
+with cte as(
+select * 
+, rank() over(partition by dep_id order by salary desc) as highest_rn
+, rank() over(partition by dep_id order by salary ) as lowest_rn
+from employee)
+select dep_id,
+max(case when highest_rn = 1 then emp_name end) as highest_salary,
+max(case when lowest_rn = 1 then emp_name end) as lowest_salary
+from cte
+group by dep_id
+
+
+/* create temp table containg high and low salary for each dept 
+and then use case statement to get emp_name of high and low sal emp
+*/
+--------- using case when 
+with cte as(
+select dep_id , min(salary) as min_sal , max(salary) as max_sal
+from employee
+group by dep_id
+)
+select e.dep_id --,min_sal ,max_sal
+,max(case when e.salary = max_sal then e.emp_name end) as max_sal_emp
+,max(case when e.salary = min_sal then e.emp_name end) as min_sal_emp	 
+from employee e
+join cte on e.dep_id = cte.dep_id
+group by e.dep_id
+order by e.dep_id
