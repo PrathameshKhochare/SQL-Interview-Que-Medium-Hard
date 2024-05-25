@@ -1,0 +1,16 @@
+-- Scenario 11  - Infosys interview que
+-- Q. give output as per formula in given table
+
+select * from input
+
+   
+with cte as(
+select * , left(formula,1) as d1 , right(formula,1) as d2 , substring(formula,2,1) as operator_
+from input 
+)
+select cte.id , cte.formula , cte.value ,  cte.operator_, i.value
+,case when operator_ = '+' then cte.value + i.value 
+    when operator_ = '-' then cte.value - i.value end as output_
+from cte
+join input i
+on i.id = cast(cte.d2 as int)
