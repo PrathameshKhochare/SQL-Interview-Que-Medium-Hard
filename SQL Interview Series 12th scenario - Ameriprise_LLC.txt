@@ -1,0 +1,42 @@
+Scenario 12 - Ameriprise LLC
+-- Q.  If criteria1 and criteria2 both 'Y' and no_of_eligible_members in each team greater than 1 then qualifier_flag as 'Y' otherwise 'N'
+
+create table Ameriprise_LLC
+(
+teamID varchar(2),
+memberID varchar(10),
+Criteria1 varchar(1),
+Criteria2 varchar(1)
+);
+insert into Ameriprise_LLC values 
+('T1','T1_mbr1','Y','Y'),
+('T1','T1_mbr2','Y','Y'),
+('T1','T1_mbr3','Y','Y'),
+('T1','T1_mbr4','Y','Y'),
+('T1','T1_mbr5','Y','N'),
+('T2','T2_mbr1','Y','Y'),
+('T2','T2_mbr2','Y','N'),
+('T2','T2_mbr3','N','Y'),
+('T2','T2_mbr4','N','N'),
+('T2','T2_mbr5','N','N'),
+('T3','T3_mbr1','Y','Y'),
+('T3','T3_mbr2','Y','Y'),
+('T3','T3_mbr3','N','Y'),
+('T3','T3_mbr4','N','Y'),
+('T3','T3_mbr5','Y','N');
+
+select * from Ameriprise_LLC
+
+
+-- 1st we want to check count(teamid) greater than 1 for both criteria as 'Y'
+-- then we will use case statement to flag Y if both are Y and count >1 for each team
+
+with qualifier_count_status as (
+select teamid , sum(case when criteria1 = 'Y' and criteria2 = 'Y' then 1 end) as qualifier_count
+from Ameriprise_LLC
+group by teamid
+	)
+select * , case when criteria1 = 'Y' and criteria2 = 'Y'  and qualifier_count >=2 then 'Y' else 'N' end as qualifier_flag
+from Ameriprise_LLC a
+left join qualifier_count_status 
+on a.teamid = qualifier_count_status.teamid
