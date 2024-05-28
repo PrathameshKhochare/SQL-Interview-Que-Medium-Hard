@@ -1,0 +1,51 @@
+Scenario 16  -- PWC SQL interview que
+-- Q. find the company name only whose revenue is incresing every year. ( revenue must need increase in each year)
+
+
+--create table and insert data:
+create table company_revenue 
+(
+company varchar(100),
+year int,
+revenue int
+)
+
+insert into company_revenue values 
+('ABC1',2000,100),('ABC1',2001,110),('ABC1',2002,120),('ABC2',2000,100),('ABC2',2001,90),('ABC2',2002,120)
+,('ABC3',2000,500),('ABC3',2001,400),('ABC3',2002,600),('ABC3',2003,800);
+
+select * from company_revenue
+
+------------------------------------ Ans
+-- 1.check if revenue is growing group by company by checking if revenue - pre_year_rev > 0
+with cte as(
+select *
+,  revenue - (lag(revenue,1,0) over(partition by company)) as revenue_diff
+from company_revenue
+)
+select company --, sum(case when revenue_diff > 0 then 1 else 0 end) as positive_rev ,count(*) as total_count
+from cte 
+group by company
+having sum(case when revenue_diff > 0 then 1 else 0 end) = count(*)
+
+----------------- or (improvement)
+
+with cte as(
+select * , lag(revenue,1,0) over(partition by company) as pre_revenue 
+from company_revenue
+	)
+select  company  --, min(revenue - pre_revenue)
+from cte 
+group by company  
+having min(revenue - pre_revenue) > 0
+
+------------------------------------ or 
+with cte as(
+select * , lag(revenue,1,0) over(partition by company) as pre_revenue 
+	,revenue - lag(revenue,1,0) over(partition by company)  as revenue_diff
+from company_revenue
+	)
+select company
+from cte 
+where company  not in (select company from cte where revenue_diff < 0)
+group by company
