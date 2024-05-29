@@ -1,0 +1,127 @@
+-- Scenario 17 Data Analyst SQL Interview Question | Normal vs Mentos vs Mentos PRO Life
+
+--  child    father    mother
+
+------------------------
+create table people
+(id int primary key not null,
+ name varchar(20),
+ gender char(2));
+
+create table relations
+(
+    c_id int,
+    p_id int,
+    FOREIGN KEY (c_id) REFERENCES people(id),
+    foreign key (p_id) references people(id)
+);
+
+insert into people (id, name, gender)
+values
+    (107,'Days','F'),
+    (145,'Hawbaker','M'),
+    (155,'Hansel','F'),
+    (202,'Blackston','M'),
+    (227,'Criss','F'),
+    (278,'Keffer','M'),
+    (305,'Canty','M'),
+    (329,'Mozingo','M'),
+    (425,'Nolf','M'),
+    (534,'Waugh','M'),
+    (586,'Tong','M'),
+    (618,'Dimartino','M'),
+    (747,'Beane','M'),
+    (878,'Chatmon','F'),
+    (904,'Hansard','F');
+
+insert into relations(c_id, p_id)
+values
+    (145, 202),
+    (145, 107),
+    (278,305),
+    (278,155),
+    (329, 425),
+    (329,227),
+    (534,586),
+    (534,878),
+    (618,747),
+    (618,904);
+
+--------ans
+
+---------------------------------- not good ans
+with father as (
+select *
+from relations r
+	join people p
+	on r.p_id = p.id
+where gender = 'M'
+	)
+,mother as (
+select * 
+from relations r
+	join people p
+	on r.p_id = p.id
+where gender = 'F'
+	)
+,summary as(
+select r.c_id as child , f.name as parent ,f.gender
+from relations r
+join father f 
+on r.p_id = f.id
+union all
+select r.c_id as child,m.name as parent ,m.gender
+from relations r
+join mother m 
+on r.p_id = m.id
+)
+select child,
+max(case when gender = 'M' then parent end) as father
+,max(case when gender = 'F' then parent end) as mother
+from summary
+group by child
+
+---------------- or 
+select s.name as child , max(p.name) as father , max(q.name) as mother
+from relations r
+left join people p
+on r.p_id = p.id and p.gender = 'M'
+left join people q
+on r.p_id = q.id and q.gender = 'F'
+join people s on s.id = r.c_id
+group by  s.name
+
+----------------- or
+with father as (
+select *
+from relations r
+	join people p
+	on r.p_id = p.id
+where gender = 'M'
+	)
+,mother as (
+select * 
+from relations r
+	join people p
+	on r.p_id = p.id
+where gender = 'F'
+	)
+select p.name as child ,
+ f.name as father , m.name as mother
+from father f
+join mother m
+on f.c_id = m.c_id
+join people p on f.c_id = p.id
+
+---------------------------- using case
+select q.name as child 
+, max(case when p.gender = 'M' then p.name end) as father 
+, max(case when p.gender = 'F' then p.name end) as mother
+from relations r
+join people p
+on r.p_id = p.id
+join people q on r.c_id = q.id
+group by q.name 
+
+
+===============================
