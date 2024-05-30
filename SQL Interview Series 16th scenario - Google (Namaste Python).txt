@@ -1,0 +1,42 @@
+ Scenario-  google interview que
+ Q. find the words which are repeating more than once considering all rows of content column
+
+create table namaste_python (
+file_name varchar(25),
+content varchar(200)
+);
+
+delete from namaste_python;
+
+insert into namaste_python values ('python bootcamp1.txt','python for data analytics 0 to hero bootcamp starting on Jan 6th')
+,('python bootcamp2.txt','classes will be held on weekends from 11am to 1 pm for 5-6 weeks')
+,('python bootcamp3.txt','use code NY2024 to get 33 percent off. You can register from namaste sql website. Link in pinned comment')
+
+-----------------------------------
+select * from namaste_python;
+
+
+
+
+
+-- logic : we have to split given strings by " " and then calculate count(of each record/word)
+-- we use string_to_array to split string and unnest string to split based on each word
+--- store word in cte and finally count the words > 1
+
+----------------------------------- sql server solution
+select value as word , count(value)
+from namaste_python
+cross apply string_split(content,' ')
+group by value
+having count(value) > 1
+
+-------------  postgresql - using string_to_array
+with cte as(
+select file_name , content , unnest(string_to_array(content,' ')) as words
+from namaste_python
+	)
+select words , count(words) as cnt
+from cte
+group by words
+having count(words) > 1
+order by cnt desc
