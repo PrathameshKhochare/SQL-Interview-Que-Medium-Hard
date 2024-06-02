@@ -1,0 +1,46 @@
+Scenario 19 - Find the count of new cust added in each month ( new cust means cust who visits 1st time)
+
+CREATE TABLE tiger_sales 
+(
+    order_date date,
+    customer VARCHAR(512),
+    qty INT
+);
+
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-01-01', 'C1', '20');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-01-01', 'C2', '30');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-02-01', 'C1', '10');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-02-01', 'C3', '15');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-03-01', 'C5', '19');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-03-01', 'C4', '10');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-04-01', 'C3', '13');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-04-01', 'C5', '15');
+INSERT INTO tiger_sales (order_date, customer, qty) VALUES ('2021-04-01', 'C6', '10');
+
+
+select * from tiger_sales
+
+
+
+------ new cust each month means only cust whose visit rank = 1 for each month
+------ we will create ranking based on cust for each month and then filter only 1st visit 
+------- then  count total distinct cust by month
+
+select order_date, count(distinct customer) as new_cust
+from (
+select * --,extract (month from order_date) as mnt 
+, row_number() over(partition by customer order by order_date) as rn
+from tiger_sales ) a
+where rn = 1
+group by order_date
+
+---------------------------- or
+----- also 1st visit can be calculated by taking cus with min(order_date) 
+----- then find out first-visit and its total cust count
+
+select first_visit , count(distinct customer) as new_cust
+from(
+select customer , min(order_date) as first_visit
+from tiger_sales
+group by customer)a
+group by first_visit
