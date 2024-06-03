@@ -1,0 +1,83 @@
+Scenario 20 -- PWC sql interview que
+Q. we have to print mismatching records and commenting as per output
+
+create table source(id int, name varchar(5))
+
+create table target(id int, name varchar(5))
+
+insert into source values(1,'A'),(2,'B'),(3,'C'),(4,'D')
+
+insert into target values(1,'A'),(2,'B'),(4,'X'),(5,'F');
+
+output -
+-- id   comment
+    3   new in source
+    4   mismatch
+    5   new in target
+
+select * from source
+select * from target
+---------------------------- ans
+
+select coalesce(s.id,t.id) as id
+, case when t.name is null then 'new in source'
+       when s.name is null then 'new in dest'
+	   when s.name != t.name then 'mismatch' end as comment
+
+from source s
+full outer join target t
+on s.id = t.id
+where s.name is null or t.name is null or s.name != t.name
+
+
+
+-- first we will join tables on id with full outer join
+--we can crete new column using case when statement 
+------------------------------ with full join
+with cte as(
+select coalesce(s.id,t.id) as id ,s.name as name , t.id as id1 , t.name as name1
+from source s
+full outer join target t
+on s.id = t.id 
+where s.name is null or t.name is null or s.name != t.name
+	)
+select id,
+case when name1 is null then 'new in source' when name is null then 'new in target' when name1 != name then 'mismatch' end as comment
+
+from cte
+--where name != name1 or name is null or name1 is null
+
+
+-- 1st union all records from source and target as table_ as new column for making diff
+-- then calculate aggregation like count(id) , min(name) , max(name) ,min(table_) , max(table_) for comaparing and filtering reords
+-- then use case when statement to filter as per required output
+--------------------------- union all
+with cte as(
+select * ,'source' as table_ from source
+union all
+select * ,'target' as table_ from target
+)
+,cte2 as(
+select id ,count(name) as total_cnt 
+,min(name) as name_min , max(name) as name_max , min(table_) as table_min , max(table_) as table_max
+from cte
+group by id
+order by id)
+select id , case when name_min = name_max and table_min = 'source' then 'new in source' 
+                 when name_min = name_max and table_min = 'target' then 'new in target'
+				 else 'mismatch' end as comment
+from cte2
+where name_min != name_max or table_min = table_max
+
+--------------------------- union all (simplified)
+with cte as(
+select * ,'source' as table_ from source
+union all
+select * ,'target' as table_ from target
+)
+
+select id ,count(name) as total_cnt ,min(name) as name_min , max(name) as name_max , min(table_) as table_min , max(table_) as table_max
+, case when min(name) != max(name) then 'mismatch' when min(table_) = 'source' then 'new in source' else 'new in target' end as comment
+from cte
+group by id
+having count(name) = 1 or (min(name) != max(name))
