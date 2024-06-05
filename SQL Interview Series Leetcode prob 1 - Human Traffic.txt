@@ -1,0 +1,56 @@
+Leetcode Prob 1  Human traffic of stadium
+Q. write a query to display records which have 3 or more consecutive rows with amount of people more than 100 each day
+
+script: 
+create table stadium (
+id int,
+visit_date date,
+no_of_people int
+);
+
+insert into stadium
+values (1,'2017-07-01',10)
+,(2,'2017-07-02',109)
+,(3,'2017-07-03',150)
+,(4,'2017-07-04',99)
+,(5,'2017-07-05',145)
+,(6,'2017-07-06',1455)
+,(7,'2017-07-07',199)
+,(8,'2017-07-08',188);
+
+select * from stadium
+
+
+
+--------------------- using lag - lead
+with cte as(
+select * 
+, lead(no_of_people ,1) over(order by visit_date) as next_day
+, lead(no_of_people ,2) over(order by visit_date) as next_to_next_day
+, lag(no_of_people ,1) over(order by visit_date) as prev_day
+, lag(no_of_people ,2) over(order by visit_date) as prev_to_prev_day
+from stadium
+	)
+select visit_date , no_of_people
+from cte
+where (no_of_people>= 100) and ((next_day >= 100 and next_to_next_day >= 100) or (prev_day >= 100 and prev_to_prev_day >= 100))
+
+------------------------- using row_number
+-- we create row_numbers based on order date and give condition for filtering that people > 100 , as row nos gives unified rank
+--- but as we apply filter id becomes uneven, using this logic we sub row_no from id to find consicutive people with 100+ count
+--- then we group on diff column to find out days for total_people > 100 on consicutive days
+
+
+with cte as(
+select * , row_number() over (order by visit_date) as rn , (id - row_number() over (order by visit_date)) as diff_
+from stadium
+where no_of_people >= 100
+	)
+	select visit_date , no_of_people from cte
+	where diff_ in
+	(
+select diff_ --, count(no_of_people) as people_cnt
+from cte
+group by diff_ 
+having count(no_of_people) >= 3
+		)
