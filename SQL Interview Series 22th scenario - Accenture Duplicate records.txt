@@ -1,0 +1,41 @@
+--Scenario 22 - Accenture Interview Que -Duplicates records
+-- In given table, show only lower case email records for same email id's,
+-- like , for emp_id 102,105 and 106 email is same , but output contains only 102 and 105
+
+/*output -
+101	"Liam Alton"	"li.al@abc.com"
+102	"Josh Day"	"jo.da@abc.com"
+103	"Sean Mann"	"se.ma@abc.com"
+104	"Evan Blake"	"ev.bl@abc.com"
+105	"Toby Scott"	"jo.da@abc.com"
+107	"Ankit Bansal"	"AN.BA@ABC.COM"
+*/
+
+Here is the script:
+CREATE TABLE employees  (employee_id int,employee_name varchar(15), email_id varchar(15) );
+
+delete from employees;
+
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('101','Liam Alton', 'li.al@abc.com');
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('102','Josh Day', 'jo.da@abc.com');
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('103','Sean Mann', 'se.ma@abc.com'); 
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('104','Evan Blake', 'ev.bl@abc.com');
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('105','Toby Scott', 'jo.da@abc.com');
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('106','Anjali Chouhan', 'JO.DA@ABC.COM');
+INSERT INTO employees (employee_id,employee_name, email_id) VALUES ('107','Ankit Bansal', 'AN.BA@ABC.COM');
+
+select * from employees
+
+----------ans
+-- we will rank the emp_id based on  Ascii values of email in desc manner (ascii values of 'a'(97) is greater than 'A'(65))
+
+with cte as(
+select *  , rank() over(partition by lower(email_id)  order by ascii(email_id) desc) as rn
+from employees
+)
+select employee_id ,employee_name , email_id
+from cte
+where rn =1
+order by employee_id
+
+--------------------------- end
