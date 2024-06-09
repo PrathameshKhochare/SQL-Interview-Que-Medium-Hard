@@ -1,0 +1,82 @@
+/* Q.2
+A ski resort company is planning to construct a new ski slope using a pre-existing network of 
+mountain huts and trails between them. A new slope has to begin at one of the mountain huts, 
+have a middle station at another hut connected with the first one by a direct trail, and end at 
+the third mountain hut which is also connected by a direct trail to the second hut. The altitude 
+of the three huts chosen for constructing the ski slope has to be strictly decreasing
+
+Each entry in the table trails represents a direct connection between huts with IDs hut1 and 
+hut2. Note that all trails are bidirectional.
+Create a query that finds all triplets(startpt,middlept,endpt) representing the mountain huts 
+that may be used for construction of a ski slope.
+Output returned by the query can be ordered in any way.
+
+Your query should return:
+startpt middlept endpt
+
+Dakonat Gajantut Tupur
+Dakonat Tupur Rifat
+Gajantut Tupur Rifat
+Natisa Gajantut Tupur
+*/
+
+drop table if exists mountain_huts;
+create table mountain_huts 
+(
+	id 			integer not null unique,
+	name 		varchar(40) not null unique,
+	altitude 	integer not null
+);
+insert into mountain_huts values (1, 'Dakonat', 1900);
+insert into mountain_huts values (2, 'Natisa', 2100);
+insert into mountain_huts values (3, 'Gajantut', 1600);
+insert into mountain_huts values (4, 'Rifat', 782);
+insert into mountain_huts values (5, 'Tupur', 1370);
+
+drop table if exists trails;
+create table trails 
+(
+	hut1 		integer not null,
+	hut2 		integer not null
+);
+insert into trails values (1, 3);
+insert into trails values (3, 2);
+insert into trails values (3, 5);
+insert into trails values (4, 5);
+insert into trails values (1, 5);
+
+select * from mountain_huts;
+select * from trails;
+
+---------- ans
+-- we 1st join both tables on starting hut ie. hut1
+with first_trial as(
+select hut1 as start_hut , m.name as start_hut_name , m.altitude as start_hut_altitude , hut2 as end_hut
+from trails t1
+join mountain_huts m
+on m.id = t1.hut1
+	)
+-- now we will join above 1st trail on hut2 i.e end trail ( joining end_hut with id in mountain_huts)
+,middle_trail as(
+select f.* , m1.name as end_hut_name , m1.altitude as end_hut_altitude
+,case when start_hut_altitude > m1.altitude then 1 else 0 end as altitude_flag
+from first_trial f
+join mountain_huts m1
+on f.end_hut = m1.id
+)	
+-- now will check altitude of start and end pos, as we know trails are bidirectional 
+--and altitude should decresing from start to end , will use case statement to flip the start and end pos if start_alt < end_alt
+, final_trail as(
+select 
+case when altitude_flag =1 then start_hut else end_hut end as start_hut
+, case when altitude_flag =1 then start_hut_name else end_hut_name end as start_hut_name
+,case when altitude_flag =1 then end_hut else start_hut end as end_hut
+, case when altitude_flag =1 then end_hut_name else start_hut_name end as end_hut_name
+from middle_trail
+)
+-- finally use self join to get end_hut of 1st trail as start_hut of last trail
+select ft1.start_hut_name , ft1.end_hut_name , ft2.end_hut_name
+from final_trail ft1
+join final_trail ft2
+on ft1.end_hut = ft2.start_hut
+order by start_hut_name
