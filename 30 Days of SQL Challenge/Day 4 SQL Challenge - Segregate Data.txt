@@ -1,0 +1,31 @@
+--Q. Segregate Data (Query o/p should in below 2 format)
+--o/p 1
+id    name     location
+1     David     London
+--o/p 2
+id    name     location
+5     David     London
+
+-------------------
+drop table if exists Q4_data;
+create table Q4_data
+(
+	id			int,
+	name		varchar(20),
+	location	varchar(20)
+);
+insert into Q4_data values(1,null,null);
+insert into Q4_data values(2,'David',null);
+insert into Q4_data values(3,null,'London');
+insert into Q4_data values(4,null,null);
+insert into Q4_data values(5,'David',null);
+
+select * from Q4_data;
+
+
+
+-------- solution 1 -- using max() to get max of all columns
+select max(id) , max(name) , max(location) from Q4_data
+
+-------- solution 2 -- using min() to get min of all columns
+select min(id) , min(name) , min(location) from Q4_data
