@@ -1,0 +1,42 @@
+/*
+Q. Student Performance
+You are given a table having marks of one student in every test.
+output the test in which student has improved his performance.
+for student to improve performance he has to score more than previous test.
+provide 2 soln, 1st including first test score and 2nd, excluding it.
+*/
+
+drop table if exists  student_tests;
+create table student_tests
+(
+	test_id		int,
+	marks		int
+);
+insert into student_tests values(100, 55);
+insert into student_tests values(101, 55);
+insert into student_tests values(102, 60);
+insert into student_tests values(103, 58);
+insert into student_tests values(104, 40);
+insert into student_tests values(105, 50);
+
+select * from student_tests;
+
+
+---- ans
+-- lag operator (including first test score)
+select test_id , marks
+from(
+select * , lag(marks,1,0) over(order by test_id) as prev_marks
+from student_tests
+)a
+where marks > prev_marks
+
+-- lag operator (excluding first test score)
+select test_id , marks
+from(
+select * , lag(marks,1) over(order by test_id) as prev_marks
+from student_tests
+)a
+where marks > prev_marks
+
+-------------------------------- end
