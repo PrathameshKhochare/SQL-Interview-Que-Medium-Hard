@@ -1,0 +1,53 @@
+/*Prob statement - Find Relevant dates
+In given i/p table , day_indicator field indicates day_of_week with 1st char being Monday , followed by Tuesday and so on.
+Write query to filter dates column to showcase only those days where day_indicator char for that day of week is 1
+*/
+
+drop table if exists Day_Indicator;
+create table Day_Indicator
+(
+	Product_ID 		varchar(10),	
+	Day_Indicator 	varchar(7),
+	Dates			date
+);
+insert into Day_Indicator values ('AP755', '1010101', to_date('04-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('05-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('06-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('07-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('08-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('09-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('AP755', '1010101', to_date('10-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('04-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('05-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('06-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('07-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('08-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('09-Mar-2024','dd-mon-yyyy'));
+insert into Day_Indicator values ('XQ802', '1000110', to_date('10-Mar-2024','dd-mon-yyyy'));
+
+select * from Day_Indicator;
+------------- extract position of each day in day_indicator column using substring
+with cte as(
+select * ,extract(isodow from dates) as day_ , TO_CHAR(dates, 'Day') AS day_name
+,substring(day_indicator ,extract(isodow from dates)::int ,1 ) as pos_
+from Day_Indicator
+)
+select product_id , day_indicator , dates
+from cte
+where pos_::int = 1
+
+-------------------------------- or 
+
+----------- prob sayes for day_indicator col,for prod_id "AP755" , 1st ,3rd,5th and 7th should indicate 1 and 0 for remaining 
+------  we can extract dow from dates col which gives 1 for mon and 7 for sund if we use 'isodow' function
+------ and then we will use case statement to check substring of day_indicator col for position 1-7 , if each pos gives 1 then flag =1 else flag =0
+------- finally will output those records where flag = 1 (return only days where indicator shows 1)
+select product_id , day_indicator , dates 
+from (
+select *,extract('isodow' from dates) as dow --, to_char(dates ,'year')    # isodow - will gives dates from 1 -7  where dow - will gives dates from 1,2,3,4,5,6,0
+, case when substring(day_Indicator, extract('isodow' from dates):: int,1) = '1' then 'include' else 'exclude' end as flag
+from Day_Indicator
+	) a
+where flag = 'include'	
+
+----------------------------end
