@@ -1,0 +1,61 @@
+/* Q. 7 Finding Missing Values
+Prob statement -
+In given table there are rows with missing Job_role values. write query to fill in those blank fields with resp job roles
+*/
+
+drop table if exists job_skills;
+create table job_skills
+(
+	row_id		int,
+	job_role	varchar(20),
+	skills		varchar(20)
+);
+insert into job_skills values (1, 'Data Engineer', 'SQL');
+insert into job_skills values (2, null, 'Python');
+insert into job_skills values (3, null, 'AWS');
+insert into job_skills values (4, null, 'Snowflake');
+insert into job_skills values (5, null, 'Apache Spark');
+insert into job_skills values (6, 'Web Developer', 'Java');
+insert into job_skills values (7, null, 'HTML');
+insert into job_skills values (8, null, 'CSS');
+insert into job_skills values (9, 'Data Scientist', 'Python');
+insert into job_skills values (10, null, 'Machine Learning');
+insert into job_skills values (11, null, 'Deep Learning');
+insert into job_skills values (12, null, 'Tableau');
+
+select * from job_skills;
+
+
+select * from cte
+
+
+------------------- solution 1: ( using window function)
+/* we can solve this prob with first_value() function, to do this we 1st partition data by job_role i.e we flag data to 0 for null job_role and 1 for non_null and sum the 
+ flag to get 1 for all rows of 1st job_role , 2 for 2nd and 3 for 3rd job*/
+with cte as(
+select *
+,sum(case when job_role is null then 0 else 1 end) over(order by row_id) as segments
+from job_skills
+)
+select row_id , first_value(job_role) over(partition by segments) as job_roles , skills
+from cte
+
+------------ solution 2 ( using recursive cte)
+/* syntax for recursive cte 
+with recursive cte (
+       base query 
+				union
+	   recursive query			
+                   )
+	select * from cte			   
+*/
+with recursive cte as(
+   select * from job_skills where row_id = 1   -- base condition
+	union
+   select js.row_id , coalesce(js.job_role,cte.job_role) as job_ , js.skills 
+ from cte join job_skills js
+ on js.row_id = cte.row_id + 1	 -- iterative condition
+)
+select * from cte 
+
+----------------- end
