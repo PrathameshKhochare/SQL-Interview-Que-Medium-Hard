@@ -1,0 +1,141 @@
+/* Q. 9 - Salary Report Generator
+Using the given Salary,Income and Deduction tables,first write an sql query to populate the emp_transaction table as shown below and then generate a salary as shown
+*/
+
+drop table if exists salary;
+create table salary
+(
+	emp_id		int,
+	emp_name	varchar(30),
+	base_salary	int
+);
+insert into salary values(1, 'Rohan', 5000);
+insert into salary values(2, 'Alex', 6000);
+insert into salary values(3, 'Maryam', 7000);
+
+
+drop table if exists income;
+create table income
+(
+	id			int,
+	income		varchar(20),
+	percentage	int
+);
+insert into income values(1,'Basic', 100);
+insert into income values(2,'Allowance', 4);
+insert into income values(3,'Others', 6);
+
+
+drop table if exists deduction;
+create table deduction
+(
+	id			int,
+	deduction	varchar(20),
+	percentage	int
+);
+insert into deduction values(1,'Insurance', 5);
+insert into deduction values(2,'Health', 6);
+insert into deduction values(3,'House', 4);
+
+
+drop table if exists emp_transaction;
+create table emp_transaction
+(
+	emp_id		int,
+	emp_name	varchar(50),
+	trns_type	varchar(20),
+	amount		numeric
+);
+insert into emp_transaction
+select s.emp_id, s.emp_name, x.trns_type
+, case when x.trns_type = 'Basic' then round(base_salary * (cast(x.percentage as decimal)/100),2)
+	   when x.trns_type = 'Allowance' then round(base_salary * (cast(x.percentage as decimal)/100),2)
+	   when x.trns_type = 'Others' then round(base_salary * (cast(x.percentage as decimal)/100),2)
+	   when x.trns_type = 'Insurance' then round(base_salary * (cast(x.percentage as decimal)/100),2)
+	   when x.trns_type = 'Health' then round(base_salary * (cast(x.percentage as decimal)/100),2)
+	   when x.trns_type = 'House' then round(base_salary * (cast(x.percentage as decimal)/100),2) end as amount	   
+from salary s
+cross join (select income as trns_type, percentage from income
+			union
+			select deduction as trns_type, percentage from deduction) x;
+
+select * from emp_transaction
+
+select * from salary;
+select * from income;
+select * from deduction;
+drop table if exists emp_transaction;
+
+
+
+
+create extension tablefunc;
+
+-------- pivoting data using crosstab
+/* syntax
+select *
+from crosstab('base query'
+			 ,'list_of_columns')
+			 as result(final columns with dtype)
+*/
+
+select emp_name , allowance ,basic , health , (allowance + basic+ health) as gross , house , insurance , others , (house + insurance + others) as total_deduction
+ , (allowance + basic+ health) - (house + insurance + others) as net_pay
+from crosstab('select emp_name , trns_type ,amount from emp_transaction order by emp_name , trns_type'
+			 ,'select distinct trns_type from emp_transaction order by trns_type')
+			 as result(emp_name varchar(20) ,allowance numeric , basic numeric , health numeric , house numeric , insurance numeric , others numeric)
+
+
+---------------- Using Pivot (in Mysql ,sql workbench)
+
+select 
+   emp_name 
+   ,allowance ,basic , health , (allowance + basic+ health) as gross 
+   , house , insurance , others , (house + insurance + others) as total_deduction
+   , (allowance + basic+ health) - (house + insurance + others) as net_pay
+
+from 
+     (select emp_name , trns_type ,amount from emp_transaction)bq
+ pivot
+     ( sum(amount)
+	   for trns_type in (['Allowance'] ,['Basic'] ,['Health'] ,['House'],['Insurance'],['Others'])
+	 )pq ;
+
+
+---------or (using cte's)
+
+
+with cte as	
+	(
+		select id, income as trans_type, percentage 
+		from
+		income
+		union all 
+		select id, deduction as trans_type, percentage 
+		from deduction
+	),
+	cte2 as
+	(
+		select emp_id, emp_name, trans_type, (percentage * base_salary)/100 as amount
+		from salary
+		cross join 
+		cte
+	)
+	,
+	cte3 as
+	(
+select emp_name as employee, 
+sum(case when trans_type = 'Basic' then amount else null end) as Basic,
+sum(case when trans_type = 'Allowance' then amount else null end) as Allowance,
+sum(case when trans_type = 'Others' then amount else null end) as Others,
+sum(case when trans_type = 'Insurance' then amount else null end) as Insurance,
+sum(case when trans_type = 'Health' then amount else null end) as Health,
+sum(case when trans_type = 'House' then amount else null end) as House
+from cte2
+group by emp_name
+)
+select *,
+Basic + Allowance + Others as Gross,
+Insurance + Health + House  as Total_deduction
+from cte3
+---------------------------- end
