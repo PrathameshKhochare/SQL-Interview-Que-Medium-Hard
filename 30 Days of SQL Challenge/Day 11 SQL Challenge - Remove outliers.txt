@@ -1,0 +1,52 @@
+/* Q. 11 Remove Outlier
+Prob statement -
+In given input table, there are hotel rating which are either too high or too low compared to the standard ratings the hotel receives each year.
+write a query to identify and exclude these outlier records as shown in expected output below.
+
+o/p
+  hotel             year    rating
+"Radisson Blu"	    2021	3.5
+"Radisson Blu"	    2022	3.2
+"Radisson Blu"	    2023	3.8
+"InterContinental"	2020	4.2
+"InterContinental"	2021	4.5
+"InterContinental"	2023	3.8
+
+*/
+
+
+drop table if exists hotel_ratings;
+create table hotel_ratings
+(
+	hotel 		varchar(30),
+	year		int,
+	rating 		decimal
+);
+insert into hotel_ratings values('Radisson Blu', 2020, 4.8);
+insert into hotel_ratings values('Radisson Blu', 2021, 3.5);
+insert into hotel_ratings values('Radisson Blu', 2022, 3.2);
+insert into hotel_ratings values('Radisson Blu', 2023, 3.8);
+insert into hotel_ratings values('InterContinental', 2020, 4.2);
+insert into hotel_ratings values('InterContinental', 2021, 4.5);
+insert into hotel_ratings values('InterContinental', 2022, 1.5);
+insert into hotel_ratings values('InterContinental', 2023, 3.8);
+
+select * from hotel_ratings
+
+
+------ ans (will use window function to take avg(rating) and then rank hotel based on rating diff and exclude records with highest rating_diff)
+with cte as(
+select * 
+,round(avg(rating) over(partition by hotel),2) as avg_rating
+	from hotel_ratings
+)
+,hotel_rank as(
+select * ,abs(rating - avg_rating) as rating_diff , rank() over(partition by hotel order by abs(rating - avg_rating) desc) as rn
+from cte 
+)
+select hotel , year ,rating
+from hotel_rank
+where rn >1
+order by hotel desc, year
+
+-------------------------------- end
