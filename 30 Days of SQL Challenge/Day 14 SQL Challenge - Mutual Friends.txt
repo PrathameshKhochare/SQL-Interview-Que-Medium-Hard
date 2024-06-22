@@ -1,0 +1,92 @@
+/* Q. 14
+Prob Statement -
+For the given Friends,find the no of mutual friends
+
+Output
+Friend1   Friend2   Mutual_Friends
+"Jason"	   "Mary"	2
+"John"	  "Mary"	0
+"Mike"	  "Jason"	1
+"Mike"	  "Mary"	1
+"Susan"	  "Jason"	1
+"Susan"	   "Mary"	1
+*/
+
+DROP TABLE IF EXISTS Friends;
+
+CREATE TABLE Friends
+(
+	Friend1 	VARCHAR(10),
+	Friend2 	VARCHAR(10)
+);
+INSERT INTO Friends VALUES ('Jason','Mary');
+INSERT INTO Friends VALUES ('Mike','Mary');
+INSERT INTO Friends VALUES ('Mike','Jason');
+INSERT INTO Friends VALUES ('Susan','Jason');
+INSERT INTO Friends VALUES ('John','Mary');
+INSERT INTO Friends VALUES ('Susan','Mary');
+
+select * from Friends;
+
+
+--------
+/* 1st collect all friends with their mutual friends - using Union
+*/
+with all_friends as(
+select friend1 as friend1 , friend2 as friend2
+from Friends 
+union all
+select friend2 as friend1 , friend1 as friend2
+from Friends
+--order by friend1
+)
+
+------all friends of friend1 , eg jason
+select af1.friend1, af1.friend2 as mutual_friends
+from 
+(
+select friend1 as friend1 , friend2 as friend2
+from Friends
+union
+select friend2 as friend1 , friend1 as friend2
+from Friends
+order by friend1
+)af1
+--where af1.friend1 = 'Jason'
+
+------all friends of friend2 , eg mary
+select af2.friend1 , af2.friend2 as mutual_friends
+from (
+select friend1 as friend1 , friend2 as friend2
+from Friends
+union
+select friend2 as friend1 , friend1 as friend2
+from Friends
+order by friend1
+	)af2
+--where af2.friend1 = 'Mary'
+						
+------------------------- final ans
+
+with all_friends as(
+select friend1 as friend1 , friend2 as friend2
+from Friends 
+union all
+select friend2 as friend1 , friend1 as friend2
+from Friends
+
+)
+-- 1st find all friends of friend1 ,eg jason and then find all friends of friend2 eg marry
+select distinct f.friend1 ,f.friend2  -- af.friend2 as mutual_friends
+, count(af.friend2) over(partition by f.friend1 ,f.friend2 ) as total_mutual_friends
+from friends f
+left join all_friends af 
+     on f.friend1 = af.friend1     --- all friends of friend1, jason - marry,mike, susan
+     and 
+	                    af.friend2 in (select af2.friend2 from all_friends af2 
+						where af2.friend1 = f.friend2 )   -- all friends of friend2 i.e marry  are jason ,mike,john, susan
+
+order by friend1
+
+
+------------------------- end 
