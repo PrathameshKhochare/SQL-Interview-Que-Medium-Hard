@@ -1,0 +1,93 @@
+
+/*
+Q. 19 - Pizza Delivery
+
+-- Given table showcases details of pizza delivery order for the year of 2023.
+-- If an order is delayed then the whole order is given for free. Any order that takes 30 minutes more than the expected time is considered as delayed order. 
+-- delay is when delivery happens 30 mins post the order date.
+-- Identify the percentage of delayed order for each month and also display the total no of free pizzas given each month.
+
+*/
+DROP TABLE IF EXISTS pizza_delivery;
+CREATE TABLE pizza_delivery 
+(
+	order_id 			INT,
+	order_time 			TIMESTAMP,
+	expected_delivery 	TIMESTAMP,
+	actual_delivery 	TIMESTAMP,
+	no_of_pizzas 		INT,
+	price 				DECIMAL
+);
+
+
+-- Data to this table can be found in CSV File
+-- Load data from CSV file
+copy pizza_delivery (order_id, order_time, expected_delivery, actual_delivery, no_of_pizzas, price)
+FROM 'C:\Users\Prathamesh\Downloads\Video_Q19_Scripts\Video_Q19_Scripts\Video_Q19_Dataset_CSV_FILE.csv'
+DELIMITER ','
+CSV HEADER;
+
+select * from pizza_delivery;
+
+------ ans
+
+with cte as(
+			select  to_char(order_time,'Mon-YYYY') as period  , no_of_pizzas
+			, count(1) over(partition by extract(month from order_time) order by extract(month from order_time) ) as total_monthly_orders
+			, round(extract(epoch from actual_delivery)/60 - extract(epoch from order_time)/60,2) as total_delivery_mins
+			from pizza_delivery
+			where actual_delivery is not null
+	)
+	
+select 	period , concat(round(100.0 *(late_delivery_orders::decimal / montly_orders),2)::varchar ,'%') as percentage_of_late_orders , total_free_pizzas
+from(
+	select period , max(total_monthly_orders) as montly_orders , count(total_delivery_mins) as late_delivery_orders , sum(no_of_pizzas) as total_free_pizzas
+	from cte
+	where total_delivery_mins > 30
+	group by period
+	 order by extract( month from to_date(left(period ,3) ,'Mon-YYYY' ))
+)x
+
+
+------ or -> ans
+
+select to_char(order_time,'Mon-YYYY') as period 
+, concat(round(sum(case when round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30  then 1 else 0 end)::decimal / count(1)*100,2),'%') as delay_percent
+
+,sum(case when round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30  then no_of_pizzas else 0 end) as free_pizzas
+from pizza_delivery
+where actual_delivery is not null
+--where round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30
+group by to_char(order_time,'Mon-YYYY')
+order by extract(month from to_date(to_char(order_time ,'Mon-YYYY'),'Mon-YYYY'))
+
+---------------------------- simplyfied query
+with cte as(
+select to_char(order_time,'Mon-YYYY') as period 
+, sum(case when round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30  then 1 else 0 end)  as delay_orders
+,count(1) as total_orders
+,sum(case when round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30  then no_of_pizzas else 0 end) as free_pizzas
+from pizza_delivery
+where actual_delivery is not null
+--where round((extract (epoch from actual_delivery))/60 - (extract ( epoch from order_time))/60 ,2) > 30
+group by to_char(order_time,'Mon-YYYY')
+)
+select * , concat(round(100.0*(delay_orders::decimal / total_orders),2),'%') as delay_percent
+from cte	
+--order by extract(month from to_date(to_char(period ,'Mon-YYYY'),'Mon-YYYY'))
+order by extract(month from to_date(left(period ,3),'Mon-YYYY'))
+
+------------------ or 
+select to_char(order_time, 'Mon-YYYY') as period
+, concat(round((cast(sum(case when extract(hour from (actual_delivery - order_time))*60 
+			+ extract(minute from (actual_delivery - order_time)) 
+			> 30 then 1 else 0 end)	as decimal) / count(1))*100,1),'%')  delayed_flag	
+, sum(case when extract(hour from (actual_delivery - order_time))*60 
+			+ extract(minute from (actual_delivery - order_time)) 
+			> 30 then no_of_pizzas else 0 end)	 as free_pizzas		
+from pizza_delivery
+where actual_delivery is not null
+group by to_char(order_time, 'Mon-YYYY')
+order by extract(month from to_date(to_char(order_time, 'Mon-YYYY'),'Mon-YYYY'));
+
+------------------------------------- end
