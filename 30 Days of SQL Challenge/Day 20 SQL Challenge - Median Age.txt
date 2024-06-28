@@ -1,0 +1,83 @@
+/* Q.20 - Median Age
+
+
+-- Find the median ages of countries
+*/
+
+drop table if exists people;
+create table peoples
+(
+	id			int,
+	country		varchar(20),
+	age			int
+);
+insert into peoples values(1 ,'Poland',10 );
+insert into peoples values(2 ,'Poland',5  );
+insert into peoples values(3 ,'Poland',34   );
+insert into peoples values(4 ,'Poland',56);
+insert into peoples values(5 ,'Poland',45  );
+insert into peoples values(6 ,'Poland',60  );
+insert into peoples values(7 ,'India',18   );
+insert into peoples values(8 ,'India',15   );
+insert into peoples values(9 ,'India',33 );
+insert into peoples values(10,'India',38 );
+insert into peoples values(11,'India',40 );
+insert into peoples values(12,'India',50  );
+insert into peoples values(13,'USA',20 );
+insert into peoples values(14,'USA',23 );
+insert into peoples values(15,'USA',32 );
+insert into peoples values(16,'USA',54 );
+insert into peoples values(17,'USA',55  );
+insert into peoples values(18,'Japan',65  );
+insert into peoples values(19,'Japan',6  );
+insert into peoples values(20,'Japan',58  );
+insert into peoples values(21,'Germany',54  );
+insert into peoples values(22,'Germany',6  );
+insert into peoples values(23,'Malaysia',44  );
+
+select * from peoples;
+
+
+------- median = midpoint of sorted string (rank based on ascending age between each country and then calculate avg(age) for rank lies between count(country)//2 )
+---- using floor and ceil
+with cte as(
+select * , count(country) over(partition by country) as country_cnt , row_number() over(partition by country order by age) as rn
+from peoples
+	)
+select country , round(avg(age)) as median_age
+from cte	
+where rn in ( floor((country_cnt+1.0) /2) , ceil((country_cnt +1.0) /2)) 
+group by country
+
+------------------------ using division , for odd(5) - rn between (7/2) and (7/2) +1 i.e rn between 3 and 4
+ ---------------------------------------- for even(6) - rn between (6/2) and (6/2) +1 i.e rn between 3 and 4
+with cte as(
+select * , count(country) over(partition by country) as country_cnt , row_number() over(partition by country order by age) as rn
+from peoples
+	)
+select country , round(avg(age),2) as median_age
+from cte	
+where rn between ((country_cnt*1.0) /2) and ((country_cnt *1.0) /2) +1
+group by country
+
+
+-------------------- or  (casting country count as decimal to get int division and then use >=and <= operators to get middle rank value)
+with cte as(
+select * , cast(count(country) over(partition by country) as decimal) as country_cnt , row_number() over(partition by country order by age)  as rn
+from peoples
+
+	)
+select country , round(avg(age),2) as median_age
+from cte	
+where rn >= country_cnt /2 and rn <= country_cnt /2 +1
+group by country
+
+/* logic -
+select floor((7 + 1.0) /2)  - 4
+select ceil((7 +1.0) /2)    - 4
+
+select floor((6 + 1.0) /2) - 3
+select ceil((6 +1.0) /2)    - 4
+*/
+
+----------------------------- end
