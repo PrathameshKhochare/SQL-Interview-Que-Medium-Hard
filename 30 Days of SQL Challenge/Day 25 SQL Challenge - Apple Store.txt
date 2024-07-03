@@ -1,0 +1,56 @@
+--Q. 25 Data Analyst Interview problem
+/* Analyse the given input table and come with below solution
+store_id  apple_prod_1  apple_prod_2
+1	         2	           1
+2	         1             3
+3	         0	           0
+*/
+drop table if exists product_demo;
+create table product_demo
+(
+	store_id	int,
+	product_1	varchar(50),
+	product_2	varchar(50)
+);
+insert into product_demo values (1, 'Apple - IPhone', '   Apple - MacBook Pro');
+insert into product_demo values (1, 'Apple - AirPods', 'Samsung - Galaxy Phone');
+insert into product_demo values (2, 'Apple_IPhone', 'Apple: Phone');
+insert into product_demo values (2, 'Google Pixel', ' apple: Laptop');
+insert into product_demo values (2, 'Sony: Camera', 'Apple Vision Pro');
+insert into product_demo values (3, 'samsung - Galaxy Phone', 'mapple MacBook Pro');
+
+select * from product_demo;
+
+
+
+------------- ans 
+-- we are interested in only apple products 
+-- we use case when statement along with substring and trim to get specified string of characters , like 'Apple' or 'apple' 
+
+select store_id 
+, sum(case when  substring(product_1,1,5) like '%Apple' or substring(product_1,1,5) like '%apple' then 1 else 0 end) as apple_prod_1
+, sum(case when  substring(trim(product_2),1,5) like '%Apple' or substring(trim(product_2),1,5) like '%apple' then 1 else 0 end) as apple_prod_2
+from product_demo
+group by store_id 
+order by store_id 
+
+------------------ or lower of left trimed string start with apple then 1 
+select store_id 
+, sum(case when lower(ltrim(product_1)) like 'apple%' then 1 else 0 end) as apple_prod_1
+, sum(case when lower(ltrim(product_2)) like 'apple%' then 1 else 0 end) as apple_prod_2
+from product_demo
+group by store_id 
+order by store_id 
+
+------------ or
+with cte as (
+select * , case when lower(substring(trim(product_1),1,5) ) = 'apple' then 1 else 0 end as apple_flag_1
+         , case when lower(substring(trim(product_2),1,5) ) = 'apple' then 1 else 0 end as apple_flag_2
+from product_demo
+)
+select store_id , sum(apple_flag_1) as apple_prod_1 , sum(apple_flag_2) apple_prod_2
+from cte 
+group by store_id
+order by store_id
+
+-------------------- end
