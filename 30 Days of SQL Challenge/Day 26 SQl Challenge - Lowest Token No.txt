@@ -1,0 +1,49 @@
+/* Q. 26 - Lowest Token Number
+PROBLEM STATEMENT:
+Given table contains tokens taken by different customers in a tax office.
+Write a SQL query to return the lowest token number which is unique to a customer (meaning token should be allocated to just a single customer).
+*/
+
+drop table if exists tokens;
+create table tokens
+(
+	token_num	int,
+	customer	varchar(20)
+);
+insert into tokens values(1, 'Maryam');
+insert into tokens values(2, 'Rocky');
+insert into tokens values(3, 'John');
+insert into tokens values(3, 'John');
+insert into tokens values(2, 'Arya');
+insert into tokens values(1, 'Pascal');
+insert into tokens values(9, 'Kate');
+insert into tokens values(9, 'Ibrahim');
+insert into tokens values(8, 'Lilly');
+insert into tokens values(8, 'Lilly');
+insert into tokens values(5, 'Shane');
+
+select * from tokens;
+
+
+-------- ans
+-- giving rank for tokens shared by customers , totaken no 3 and 8 are shared by single customer and hence they both have same rank
+with cte as(
+select * , rank() over(partition by token_num order by customer) as rn
+from tokens
+)
+select token_num --, min(customer) as customer
+from cte 
+where rn  = 1
+group by token_num
+having count(customer) > 1
+limit 1
+
+---------- or
+--------- select distinct * from tokens order by token_num -> will gives unique records , which only takes 1 record for same cust who shared same token_no
+select token_num --, count(token_num)
+from (select distinct * from tokens order by token_num)t
+group by token_num
+having  count(customer) = 1
+limit 1
+
+------------------------------- end
