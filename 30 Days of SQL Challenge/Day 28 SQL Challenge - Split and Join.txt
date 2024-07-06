@@ -1,0 +1,47 @@
+-- Q 28 Split and Join
+-- Find length of comma seperated values in items field
+
+drop table if exists item;
+create table item
+(
+	id		int,
+	items	varchar(50)
+);
+insert into item values(1, '22,122,1022');
+insert into item values(2, ',6,0,9999');
+insert into item values(3, '100,2000,2');
+insert into item values(4, '4,44,444,4444');
+
+select * from item;
+
+
+------- ans (using string_to_array and string_agg)
+--- we first split the items by ',' using -: unnest(string_to_array(items ,','))
+--- then we use string_agg along with group by on id column to combine the lengths by id's
+select id , string_agg(item_length::varchar,',') as item_lengths
+from (
+select id ,length(unnest(string_to_array(items ,','))) as item_length
+from item
+)a
+group by id 
+order by id
+
+------------- using lateral join
+select id , string_agg(item_length::varchar ,',') as item_lengths
+from item
+cross join lateral
+  (select length(unnest(string_to_array(items ,','))) as item_length )a
+group by id 
+order by id  
+
+
+
+
+
+------------ using sql server
+select id , string_agg(value,',')
+from item
+cross apply string_split(items ,',')
+group by id 
+order by id
+----------------------- end
