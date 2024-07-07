@@ -1,0 +1,81 @@
+
+/* Q. 29 Intermidiate SQL Query on Login-Logout
+PROBLEM STATEMENT: Given table provides login and logoff details of one user.
+Generate a report to reqpresent the different periods (in mins) when user was logged in.
+*/
+drop table if exists login_details;
+create table login_details
+(
+	times	time,
+	status	varchar(3)
+);
+insert into login_details values('10:00:00', 'on');
+insert into login_details values('10:01:00', 'on');
+insert into login_details values('10:02:00', 'on');
+insert into login_details values('10:03:00', 'off');
+insert into login_details values('10:04:00', 'on');
+insert into login_details values('10:05:00', 'on');
+insert into login_details values('10:06:00', 'off');
+insert into login_details values('10:07:00', 'off');
+insert into login_details values('10:08:00', 'off');
+insert into login_details values('10:09:00', 'on');
+insert into login_details values('10:10:00', 'on');
+insert into login_details values('10:11:00', 'on');
+insert into login_details values('10:12:00', 'on');
+insert into login_details values('10:13:00', 'off');
+insert into login_details values('10:14:00', 'off');
+insert into login_details values('10:15:00', 'on');
+insert into login_details values('10:16:00', 'off');
+insert into login_details values('10:17:00', 'off');
+
+select * from login_details;
+
+
+---------Ans  (logic - as multiple on and off status in between , we need time between first_on_time and first_off_time 
+---, hence we create groups of on_time and 1st record as log_on and last record as time before log_off time , we take log_off_time by this logic)
+
+--- 1st group the data by 'on' status and find out first_log_on and last_log_on times and store in cte
+-- after that we join cte with login_details on last_log_on_time and take lead of times by one to get log_off_time
+
+with cte as(
+			select rn - rn1 as rank_group
+			 ,first_value(times) over(partition by (rn - rn1)) as first_log_on 
+			  ,last_value(times) over(partition by (rn - rn1)) as last_log_on
+			from
+			(select * , row_number() over(order by times ,status) as rn1 from 
+					(select * , row_number() over(order by times ,status) as rn
+					from login_details) x
+			where status = 'on')y
+	     )
+, 	final_cte as(
+select rank_group , min(first_log_on) as log_on_time , max(last_log_on) as last_log_on_time
+from cte
+group by rank_group
+    )
+--select * from final_cte
+select 	log_on_time ,log_off_time, extract (min from (log_off_time - log_on_time) ) as login_duration
+from (
+select f.log_on_time , lead(times) over(order by times) as log_off_time
+from  login_details l 
+left join final_cte f
+on f.last_log_on_time = l.times
+) a
+where log_on_time is not null
+
+
+---------- or (logic - take lag of status by 1 to get get group of on time , and substract time from this group to get on_duration
+select * from login_details;
+
+with cte as(
+select * , sum(case when prev_status = 'off' then 1 else 0 end) over(order by times) as status_group    -- grouped_status from on - off time
+from (
+select * , lag(status , 1 ,'on') over(order by times) as prev_status                                    ------ prev_status
+from login_details  ) x
+)
+select min(times) as log_on_time , max(times) as log_off_times , extract (min from ( max(times) - min(times)) ) as login_duration
+from cte
+group by status_group
+having count(status_group) > 1
+order by log_on_time
+
+-------------------------- end
