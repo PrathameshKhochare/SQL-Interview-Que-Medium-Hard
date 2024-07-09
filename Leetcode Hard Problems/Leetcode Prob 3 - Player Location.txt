@@ -1,0 +1,44 @@
+/*Letecode Prob 3 - Student Report by Geography
+required o/p
+Bangalore    Mumbai    Delhi
+"Mayank"	"Rohit"	  "Virat"
+" Rahul"	" Sachin	null
+*/
+Script:
+create table players_location
+(
+name varchar(20),
+city varchar(20)
+);
+delete from players_location;
+insert into players_location
+values ('Sachin','Mumbai'),('Virat','Delhi') , ('Rahul','Bangalore'),('Rohit','Mumbai'),('Mayank','Bangalore');
+
+select * from players_location
+
+
+-----------
+
+------------------------ 1st add row_number based on city with ascending name order , then group data based on row_num and use case statement to filter playes by city
+with cte as (
+		select * , row_number() over(partition by city order by name) as city_group
+		from players_location
+)
+select --city_group, 
+ max(case when city = 'Bangalore' then name end) as Bangalore
+,  max(case when city = 'Mumbai' then name end) as Mumbai
+,  max(case when city = 'Delhi' then name end) as Delhi
+from cte
+group by city_group
+order by city_group
+
+
+------------------- Ans - using string_agg and string_to_array
+--- 1. At first, aggregated the rows into a single row using STRING_AGG (NULLs are eliminated)
+----2. Then, converted each column into array using STRING_ARRAY (So that we can use UNNEST function, as UNNEST takes array as input)
+----3. Then, used UNNEST to flatten each column into multiple rows.
+
+		select unnest(string_to_array(string_agg(case when city = 'Bangalore' then name end ,', ' order by name),','))   as Bangalore
+	    ,unnest(string_to_array(string_agg(case when city = 'Mumbai' then name end ,', ' order by name),','))   as mumbai
+		,unnest(string_to_array(string_agg(case when city = 'Delhi' then name end ,', ' order by name),','))   as Delhi
+		from players_location
