@@ -1,0 +1,56 @@
+/* Leetcode Prob 5
+Calculate total sales by year
+*/
+
+create table letecode_sales (
+product_id int,
+period_start date,
+period_end date,
+average_daily_sales int
+);
+
+insert into letecode_sales values(1,'2019-01-25','2019-02-28',100),(2,'2018-12-01','2020-01-01',10),(3,'2019-12-01','2020-01-31',1);
+
+select * from letecode_sales
+
+----------------- Ans using Generate_series
+with cte as(
+select *
+from letecode_sales s
+   cross join lateral generate_series(s.period_start ,s.period_end ,'1 day') as working_date
+	)
+select product_id , extract(year from working_date) , count(working_date) * max(average_daily_sales) as total_sales
+from cte
+group by  product_id ,extract(year from working_date) 
+order by  product_id ,extract(year from working_date) 
+
+
+/* 
+we can solve query by recursive cte
+In base query we extract min and max dates from given table
+we iterate 1day interval in min(date) , to get all the dates between min(date) and max(date)
+
+we join this cte with sales table on condition , cte.dates lies between period_start and period_end dates of sales
+we group the data by product_id and year and calculate sum(avg_sales)
+*/
+
+
+---------- Ans (sales are calculated by multiplying sum_of_period * avg_daily_sales)
+
+with recursive cte as (
+	   select min(period_start) as dates , max(period_end) as max_date
+	   from letecode_sales
+ union all
+       select date(dates + interval '1day') as dates ,  max_date
+	   from cte
+	  where dates < max_date
+	)
+--select * from cte	
+select s.product_id ,extract(year from dates) as report_year, sum(s.average_daily_sales) as total_sales
+from cte
+inner join letecode_sales s
+on cte.dates between s.period_start and s.period_end
+group by s.product_id ,extract(year from dates)
+order by s.product_id ,extract(year from dates)
+
+------------------------ end
