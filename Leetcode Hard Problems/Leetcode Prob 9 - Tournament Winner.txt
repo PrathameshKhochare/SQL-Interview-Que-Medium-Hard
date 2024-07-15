@@ -1,0 +1,66 @@
+/* Leetcode Hard PRob 9 - Tournament Winners
+Que - write an SQL query to find winners in each group
+
+-- The winner in each group is the player who scored the max total points within the group.
+--In the place of tie lowest player_id wins.
+*/
+=========================
+
+create table players
+(player_id int,
+group_id int)
+
+insert into players values (15,1);
+insert into players values (25,1);
+insert into players values (30,1);
+insert into players values (45,1);
+insert into players values (10,2);
+insert into players values (35,2);
+insert into players values (50,2);
+insert into players values (20,3);
+insert into players values (40,3);
+
+create table matches
+(
+match_id int,
+first_player int,
+second_player int,
+first_score int,
+second_score int)
+
+insert into matches values (1,15,45,3,0);
+insert into matches values (2,30,25,1,2);
+insert into matches values (3,30,15,2,0);
+insert into matches values (4,40,20,5,2);
+insert into matches values (5,35,50,1,1);
+
+--Que - write an SQL query to find winners in each group
+
+-- The winner in each group is the player who scored the max total points within the group.
+--In the place of tie lowest player_id wins.
+
+-------------ans
+select * from matches;
+select * from players;
+
+------- Ans
+with player_score as (
+		select first_player as player , first_score as score
+		from matches
+		union all
+		select second_player as player , second_score as score
+		from matches
+   )
+,cte_final as (
+select player ,p.group_id, sum(score) as total_score
+from player_score s
+join players p on s.player = p.player_id
+group by player , p.group_id
+--order by p.group_id ,total_score desc , player
+)
+select player , group_id ,total_score
+from (
+select * , row_number() over(partition by group_id order by total_score desc , player ) as rn
+from cte_final
+  )x
+  where rn = 1
