@@ -1,0 +1,56 @@
+-- Q. for given customer_id , 1st date at which cumm_txn_amount becomes more than or equal to 2000
+
+create table customer_txn(
+   cust_id int NOT NULL,
+   txn_date Date NOT NULL,
+   txn_amt INT NOT NULL
+   
+);
+
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (101,'3-1-2022',500); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (101,'3-2-2022',400); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (101,'3-3-2022',900); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (101,'3-4-2022' ,800); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (102,'3-1-2022' ,1600);
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (101,'3-2-2022' ,2200); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (103,'3-4-2022',200); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (103,'3-5-2022' ,2200); 
+INSERT INTO customer_txn (cust_id, txn_date, txn_amt) VALUES (103,'3-8-2022' ,100); 
+
+
+select * from customer_txn
+
+
+--1st we need to group data on cust_id and find out cumm_sum of amount based on date for each group
+with cte as(
+select *
+, sum(txn_amt) over(partition by cust_id order by txn_date  rows between unbounded preceding and current row) as cumm_amount
+from customer_txn
+)
+--- then we group data for records where cumm_amount > 2000
+--- on top of this we will find out 1st record which is min(txn_date) ,min(cumm_amount) on cust_id group
+-- this will gives us 1st date at which cumm_amount becomes > 2000
+select cust_id , min(txn_date) ,min(cumm_amount)
+from(
+select * --, rank() over ()
+from cte
+where cumm_amount > 2000
+)a
+group by cust_id
+
+---------------- using rank
+with cte as(
+select *
+, sum(txn_amt) over(partition by cust_id order by txn_date  rows between unbounded preceding and current row) as cumm_amount
+from customer_txn
+)
+
+select cust_id , txn_date , cumm_amount 
+from (
+select * , rank() over(partition by cust_id order by cumm_amount ) as rn
+from cte 
+where cumm_amount > 2000
+)a
+where rn = 1
+
+----------------------- end
