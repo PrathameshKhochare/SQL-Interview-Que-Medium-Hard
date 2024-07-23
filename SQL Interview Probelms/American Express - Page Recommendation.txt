@@ -1,0 +1,102 @@
+--Q. American Express Interview Q - Page Recommendation
+-- Q. detrminethe user ids and correspndin page_ids of the pages liked by their friend but not by user itself yet
+script:
+CREATE TABLE friends (
+    user_id INT,
+    friend_id INT
+);
+
+-- Insert data into friends table
+INSERT INTO friends VALUES
+(1, 2),
+(1, 3),
+(1, 4),
+(2, 1),
+(3, 1),
+(3, 4),
+(4, 1),
+(4, 3);
+
+-- Create likes table
+CREATE TABLE likes (
+    user_id INT,
+    page_id CHAR(1)
+);
+
+-- Insert data into likes table
+INSERT INTO likes VALUES
+(1, 'A'),
+(1, 'B'),
+(1, 'C'),
+(2, 'A'),
+(3, 'B'),
+(3, 'C'),
+(4, 'B');
+
+select * from friends
+select * from likes
+
+
+-------------- Ans
+/* we 1st create sep ctes for user_likes and friend_likes . as we have to ommite page_ids of users_like from friend_likes cte
+we will left join friend_likes with user_likes on user_id and page_id , and apply where condition for null values for user_likes cte 
+( as null denotes user has already liked page , so we can recommend remaining pages for that users)
+*/
+
+
+with users_likes as (
+		select distinct page_id , f.user_id
+		from friends f
+		join likes l
+		on f.user_id = l.user_id
+		order by f.user_id
+)
+, friend_likes as (
+		select distinct  l.page_id , f.user_id , f.friend_id
+		from friends f
+		join likes l
+		on f.friend_id = l.user_id
+		order by f.user_id
+)
+select distinct fl.user_id , fl.page_id  
+from friend_likes fl
+left join users_likes ul
+on fl.user_id = ul.user_id and fl.page_id = ul.page_id
+where ul.page_id is null
+order by fl.user_id , fl.page_id  
+
+------or
+with friends_like as (
+		select distinct l.page_id , f.*
+		from friends f
+		join likes l 
+		on f.friend_id = l.user_id
+		order by f.user_id
+)
+select distinct fl.user_id , fl.page_id
+from friends_like fl
+left join likes l
+on fl.user_id = l.user_id and fl.page_id = l.page_id
+where l.user_id is null
+
+------------ or (self join)
+select distinct f.user_id , fl.page_id
+from friends f
+join likes fl on f.friend_id = fl.user_id
+left join likes ul on f.user_id = ul.user_id and fl.page_id = ul.page_id
+where ul.user_id is null
+order by f.user_id
+
+
+-------------- or (not in)
+	select distinct f.user_id , fl.page_id --, concat(f.user_id , fl.page_id)
+	from friends f
+	join likes fl on f.friend_id = fl.user_id
+where concat(f.user_id , fl.page_id) 
+not in 
+	(select --distinct f.user_id , ul.page_id ,
+	  concat(f.user_id , ul.page_id)
+	from friends f
+	join likes ul on f.user_id = ul.user_id)
+order by f.user_id	
+---------------------end
