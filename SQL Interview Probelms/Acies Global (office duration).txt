@@ -1,0 +1,89 @@
+/* Acies global interview questions
+we have a swipe table which keep track of emp login and logout time
+1. Find the time emp person spent in office on perticular day.(off hrs = last_logout -1st login)
+2.Find how productive he was at office on particular day.(he might have done many swipes per day. I need to find the actual time spent at office
+*/
+
+Script:
+CREATE TABLE swipe (
+    employee_id INT,
+    activity_type VARCHAR(10),
+    activity_time timestamp
+);
+
+-- Insert sample data
+INSERT INTO swipe (employee_id, activity_type, activity_time) VALUES
+(1, 'login', '2024-07-23 08:00:00'),
+(1, 'logout', '2024-07-23 12:00:00'),
+(1, 'login', '2024-07-23 13:00:00'),
+(1, 'logout', '2024-07-23 17:00:00'),
+(2, 'login', '2024-07-23 09:00:00'),
+(2, 'logout', '2024-07-23 11:00:00'),
+(2, 'login', '2024-07-23 12:00:00'),
+(2, 'logout', '2024-07-23 15:00:00'),
+(1, 'login', '2024-07-24 08:30:00'),
+(1, 'logout', '2024-07-24 12:30:00'),
+(2, 'login', '2024-07-24 09:30:00'),
+(2, 'logout', '2024-07-24 10:30:00');
+
+select * from swipe
+
+--1. Find the time emp person spent in office on perticular day.(off hrs = last_logout -1st login)
+
+----ans
+with login_data as (
+	select employee_id   , min(activity_time) as first_login  , max(activity_time) as last_login
+	from swipe
+	where activity_type = 'login'
+	group by employee_id , activity_time::date 
+	order by employee_id , activity_time::date
+	)
+,  logout_data as (
+	select employee_id   , min(activity_time) as first_logout  , max(activity_time) as last_logout
+	from swipe
+	where activity_type = 'logout'
+	group by employee_id , activity_time::date 
+	order by employee_id , activity_time::date
+	)
+select i.employee_id ,first_login::date as date ,round(extract(epoch from (age(o.last_logout , i.first_login)))/(60*60)) as time_spent_in_hrs
+from login_data i
+join logout_data o
+on i.employee_id = o.employee_id and last_login::date = first_logout::date
+
+------------------
+--2.Find how productive he was at office on particular day.(he might have done many swipes per day. I need to find the actual time spent at office)
+with cte as (
+select *
+,lead(activity_type,1,'login') over(partition by employee_id , activity_time::date order by activity_time) as next_act
+from swipe
+)
+,cte2 as (
+	select *
+	, sum(case when next_act = 'login' then 0 else 1 end) over(partition by employee_id , activity_time::date order by activity_time) as flag
+	from cte
+)
+--select * from cte2
+,cte3 as (
+select employee_id , activity_time::date , flag , max(activity_time) - min(activity_time) as daily_spend
+from cte2
+group by employee_id , activity_time::date , flag
+order by  employee_id , activity_time::date 
+)
+select employee_id , activity_time::date , sum(daily_spend) as total_daily_spend
+from cte3
+group by employee_id , activity_time::date 
+
+--------- combine output in single query
+with cte as (
+select employee_id , activity_type , activity_time::date as date ,activity_time as login_time  
+, lead(activity_time,1) over(partition by employee_id order by activity_time) as logout_time
+from swipe
+	)
+select employee_id , date  --, min(login_time) as first_login , max(logout_time) as last_logout  
+, round(extract(epoch from  max(logout_time) -  min(login_time))/(60*60)) as office_hrs
+,sum(round(extract(epoch from (logout_time - login_time))/(60*60))) as working_time_hrs
+from cte
+where activity_type = 'login'
+group by employee_id , date 
+order by employee_id , date 
+
