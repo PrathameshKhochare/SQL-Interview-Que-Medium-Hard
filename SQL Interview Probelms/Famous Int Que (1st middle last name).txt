@@ -1,0 +1,30 @@
+-- Famous SQL Interiew Que - Find first_name , middle_name and last_name of cust in sep columns
+script:
+create table customers  (customer_name varchar(30))
+
+insert into customers values ('Ankit Bansal')
+,('Vishal Pratap Singh')
+,('Michael'); 
+
+select * from customers
+
+----- ans
+--logic - we will find out space in between cus_name , 0 space means only 1st name , 1space means - 1st and last_name , 2 space = full name
+-- for this will use replace() and length() function , position() to get pos of space
+-- we use case statement to get names
+
+with cte as (
+select customer_name , replace(customer_name,' ','') as name_without_space , (length(customer_name) - length( replace(customer_name,' ',''))) as total_spaces
+,position(' ' in customer_name) as first_space 
+,position(' ' in substring(customer_name ,position(' ' in customer_name)+1 )) pos_of_sec_space_after_first
+, position(' ' in customer_name) + position(' ' in substring(customer_name ,position(' ' in customer_name)+1 )) as second_space_from_first_letter
+--,substring(customer_name, position(' ' in (customer_name))+1)
+--,position(' ' in (customer_name))
+from customers
+	)
+select case when total_spaces = 0 then customer_name else substring(customer_name,1,first_space) end as first_name
+,  case when total_spaces > 1 then  substring(customer_name,first_space,pos_of_sec_space_after_first) else null end as middlle_name
+, case when total_spaces >= 1 then substring(customer_name,second_space_from_first_letter) else null end as last_name
+from cte
+
+--------------- end
