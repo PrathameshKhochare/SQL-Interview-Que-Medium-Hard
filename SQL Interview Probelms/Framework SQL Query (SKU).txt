@@ -1,0 +1,54 @@
+/* Framework SQL Problem
+Find price at start_of_month an diff
+
+required_output - :
+sku_id  price_date  price  diff
+1	  "2023-01-01"	  10	0
+1	  "2023-02-01"	  10	0
+1	  "2023-03-01"	  15	5
+1	  "2023-04-01"	  15	0
+1	  "2023-05-01"	  20	5
+*/
+
+--here is the script:
+create table sku 
+(
+sku_id int,
+price_date date ,
+price int
+);
+delete from sku;
+
+insert into sku values 
+(1,'2023-01-01',10)
+,(1,'2023-02-15',15)
+,(1,'2023-03-03',18)
+,(1,'2023-03-27',15)
+,(1,'2023-04-06',20)
+
+select * from sku
+
+-------- Ans
+-- we need to find 1st date of next month ,if price_date is not an 1st date of current_month
+
+-- for price_date = 1st date , we will filter out that records
+select * from sku where extract(day from price_date) = 1
+
+-- also if there are diff price for same month, then we have to consider the latest price
+-- for this we  use ranking and store in cte and filter only records with latest price_date
+-- we will use date_trunc over next_month to get 1st date of next month
+-- alse we will consider, the 1st date price records shouldn't consider in date_trunc of next_month
+with cte as (
+select * , row_number() over(partition by sku_id, extract(year from price_date) ,  extract(month from price_date) order by price_date desc ) as rn
+from sku
+	)
+,final_cte as (
+select sku_id , price_date , price  from sku where extract(day from price_date) = 1
+union all
+select sku_id , date_trunc('month',price_date + interval '1 month')::date as first_day_next_mnt ,price
+from cte where rn = 1 and  date_trunc('month',price_date + interval '1 month')::date not in (select price_date from sku where extract(day from price_date) = 1)
+	)
+select * , price - lag(price,1,price) over(order by price_date) as diff
+from final_cte
+
+---------------- end
