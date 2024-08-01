@@ -1,0 +1,40 @@
+-- Create Employee table
+CREATE TABLE Employee (
+    emp_name VARCHAR(100),
+    joining_date DATE
+);
+drop table if exists  Employee 
+-- Insert sample data into Employee table
+-- INSERT INTO Employee (emp_name, joining_date) VALUES ('John', '2024-01-15');
+-- INSERT INTO Employee (emp_name, joining_date) VALUES ('Alice', '2024-02-10');
+-- INSERT INTO Employee (emp_name, joining_date) VALUES ('Bob', '2024-02-25');
+-- INSERT INTO Employee (emp_name, joining_date) VALUES ('Emily', '2024-03-05');
+-- INSERT INTO Employee (emp_name, joining_date) VALUES ('David', '2024-03-20');
+
+INSERT INTO Employee (emp_name, joining_date) VALUES ('John', '2024-05-15');
+INSERT INTO Employee (emp_name, joining_date) VALUES ('Alice', '2024-07-10');
+INSERT INTO Employee (emp_name, joining_date) VALUES ('Bob', '2024-07-25');
+INSERT INTO Employee (emp_name, joining_date) VALUES ('Emily', '2024-08-01');
+INSERT INTO Employee (emp_name, joining_date) VALUES ('David', '2024-07-20');
+
+select * from Employee
+
+Question 1:
+-----------
+--Find data of all the employees that are hired in last two months , 
+--given data of employee name and their joining date Employee?
+
+select * --, current_date , age(current_date,joining_date) as diff
+from Employee
+where age(current_date,joining_date)  <= interval '2 months'
+
+-------------- or
+--select * from Employee
+
+select * from Employee where joining_date in
+(select joining_date from Employee
+where extract (month from current_date)  -
+extract (month from joining_date) 
+ <=2 
+);
+-------------------------end
