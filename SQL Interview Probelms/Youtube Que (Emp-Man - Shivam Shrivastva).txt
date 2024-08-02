@@ -1,0 +1,45 @@
+Question 2:
+-----------
+--We have a table that consists data of employees and their manager. 
+--If manager id is null it means he has no manager. Return list of all manager names whom have 5 direct reportees
+
+-- Create Employee table
+CREATE TABLE Employee1 (
+    emp_id INT PRIMARY KEY,
+    emp_name VARCHAR(100),
+    manager_id INT -- Foreign key referencing emp_id in Employee table
+);
+
+-- Insert sample data into Employee table
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (1, 'John', NULL);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (2, 'Alice', 1);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (3, 'Bob', 1);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (4, 'Emily', 1);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (5, 'David', 3); -- David should be under Manager 3
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (6, 'Emma', 2);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (7, 'Sophia', 3);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (8, 'Michael', 3);
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (9, 'Olivia', 3); -- New employee under manager 3
+INSERT INTO Employee1 (emp_id, emp_name, manager_id) VALUES (10, 'Daniel', 3); -- New employee under manager 3
+
+select * from Employee1
+
+select manager , count(1) as reporting_emp
+from (
+select emp.* , mng.emp_name as manager
+from Employee1 emp
+join Employee1 mng
+on emp.manager_id = mng.emp_id
+)x
+group by manager
+having count(manager) >= 5
+
+------------------------------------- or 
+select emp_name as manager
+from Employee1 where emp_id =
+  (select manager_id from Employee1
+  group by manager_id
+  having count(manager_id) = 5
+  )
+  
+ --------------------------------- end
