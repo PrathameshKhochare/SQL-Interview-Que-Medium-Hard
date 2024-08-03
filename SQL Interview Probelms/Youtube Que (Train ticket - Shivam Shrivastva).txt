@@ -1,0 +1,37 @@
+Question 3:
+-----------
+--Write a query to find out the customers who booked both air and train tickets.
+
+-- create a table
+CREATE TABLE Customer (
+  Customer_id INTEGER,
+  Booking_Id date NOT NULL,
+  Travel_Type varchar(100)
+);
+-- insert some values
+INSERT INTO Customer VALUES (152, '2023-01-12', 'train');
+INSERT INTO Customer VALUES (353, '2023-01-13', 'air');
+INSERT INTO Customer VALUES (152, '2023-01-19', 'air');
+INSERT INTO Customer VALUES (777, '2023-01-15', 'air');
+INSERT INTO Customer VALUES (352, '2023-01-16', 'train');
+INSERT INTO Customer VALUES (353, '2023-01-13', 'train');
+INSERT INTO Customer VALUES (353, '2023-01-14', 'train');
+
+select * from Customer
+
+--------------ans
+
+select Customer_id
+from Customer
+where Travel_Type in ('train','air')
+group by Customer_id
+having count(distinct Travel_Type) = 2
+
+ 
+ ----------or
+ SELECT Distinct c1.Customer_id FROM Customer c1
+join Customer c2
+on c1.Customer_id = c2.Customer_id
+WHERE c1.Travel_Type = 'air'
+AND c2.Travel_Type = 'train';
+ ------------------- end
