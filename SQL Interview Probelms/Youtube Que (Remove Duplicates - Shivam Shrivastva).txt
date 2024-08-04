@@ -1,0 +1,34 @@
+ Question 4:
+-----------
+--Given the scenario where we have experienced a pipeline failure 
+--resulting in multiple imports of data into the main table, 
+--the task is to delete the duplicate records from the main table. 
+--Write a SQL query to accomplish this.
+
+CREATE TABLE MainTable (
+    ID INT PRIMARY KEY,
+    Data VARCHAR(100)
+);
+
+INSERT INTO MainTable (ID, Data) VALUES (1, 'Sample Data 1');
+INSERT INTO MainTable (ID, Data) VALUES (2, 'Sample Data 2');
+INSERT INTO MainTable (ID, Data) VALUES (3, 'Sample Data 3');
+INSERT INTO MainTable (ID, Data) VALUES (4, 'Sample Data 4');
+INSERT INTO MainTable (ID, Data) VALUES (5, 'Sample Data 5');
+INSERT INTO MainTable (ID, Data) VALUES (6, 'Sample Data 1');
+INSERT INTO MainTable (ID, Data) VALUES (7, 'Sample Data 3');
+INSERT INTO MainTable (ID, Data) VALUES (8, 'Sample Data 3');
+INSERT INTO MainTable (ID, Data) VALUES (9, 'Sample Data 5');
+
+select * from MainTable
+--drop table MainTable
+
+with cte as
+(
+select * , row_number() over(partition by data order by id) as rownum_
+from MainTable
+)
+DELETE FROM MainTable
+WHERE (id) IN 
+(SELECT id FROM cte WHERE rownum_ > 1);
+---------------------------------------------end
