@@ -1,0 +1,92 @@
+-- PayPal Data Engineer Interview Que
+--Q- find out below output metadata structure
+--emp_id  emp_default_phone_no   total_entry  total_login  total_logout  latest_login  latest_logout
+
+CREATE TABLE employee_checkin_details (
+    employeeid	INT,
+    entry_details	VARCHAR(512),
+    timestamp_details timestamp
+);
+
+INSERT INTO employee_checkin_details (employeeid, entry_details, timestamp_details) VALUES
+	('1000', 'login', '2023-06-16 01:00:15.34'),
+	('1000', 'login', '2023-06-16 02:00:15.34'),
+	('1000', 'login', '2023-06-16 03:00:15.34'),
+	('1000', 'logout', '2023-06-16 12:00:15.34'),
+	('1001', 'login', '2023-06-16 01:00:15.34'),
+	('1001', 'login', '2023-06-16 02:00:15.34'),
+	('1001', 'login', '2023-06-16 03:00:15.34'),
+	('1001', 'logout', '2023-06-16 12:00:15.34');
+	
+CREATE TABLE employee_details (
+    employeeid	INT,
+    phone_number	INT,
+    isdefault	VARCHAR(512)
+);
+
+INSERT INTO employee_details (employeeid, phone_number, isdefault) VALUES
+	('1001', '9999', 'false'),
+	('1001', '1111', 'false'),
+	('1001', '2222', 'true'),
+	('1003', '3333', 'false');
+	
+select * from employee_checkin_details
+select * from employee_details
+
+--- ans
+
+select  c.employeeid , max(d.phone_number) as default_phone_no , count(*) as total_entry 
+, count(case when c.entry_details = 'login' then 1 end) as total_login
+, count(case when c.entry_details = 'logout' then 1 end) as total_logout
+, max(case when c.entry_details = 'login' then timestamp_details end) as latest_login
+, max(case when c.entry_details = 'logout' then timestamp_details end) as latest_logout
+from employee_checkin_details c
+left join employee_details d
+on c.employeeid = d.employeeid and  d.isdefault = 'true'
+--where d.isdefault = 'true'
+group by c.employeeid
+
+
+------------ modification in que , now if isdefault is null then print latest dateadded phone_no
+create TABLE employee_details (
+    employeeid	INT,
+    phone_number	INT,
+    isdefault	VARCHAR(512),
+	dateadded date
+);
+
+INSERT INTO employee_details (employeeid, phone_number, isdefault ,dateadded) VALUES
+	('1001', '9999', 'false' ,'2023-01-01'),
+	('1001', '1111', 'false' ,'2023-01-02'),
+	('1001', '2222', 'true','2023-01-03'),
+	('1000', '3333', 'false','2023-01-01'),
+	('1000', '4444', 'false','2023-01-02');
+	
+select * from employee_checkin_details
+select * from employee_details
+
+with cte as (
+select * , row_number() over (partition by employeeid order by dateadded desc) as rn
+from employee_details
+where isdefault = 'false'
+)
+select * from cte where rn = 1
+
+-----
+with cte as (
+select * , row_number() over (partition by employeeid order by dateadded desc) as rn
+from employee_details
+where isdefault = 'false'
+)
+select  c.employeeid --, e.phone_number
+, max(coalesce(d.phone_number,e.phone_number)) as default_phone_no , count(*) as total_entry 
+, count(case when c.entry_details = 'login' then 1 end) as total_login
+, count(case when c.entry_details = 'logout' then 1 end) as total_logout
+, max(case when c.entry_details = 'login' then timestamp_details end) as latest_login
+, max(case when c.entry_details = 'logout' then timestamp_details end) as latest_logout
+from employee_checkin_details c
+left join employee_details d on c.employeeid = d.employeeid and  d.isdefault = 'true'
+left join cte e on  c.employeeid = e.employeeid and e.rn = 1
+group by c.employeeid --,  e.phone_number
+
+---------- end
