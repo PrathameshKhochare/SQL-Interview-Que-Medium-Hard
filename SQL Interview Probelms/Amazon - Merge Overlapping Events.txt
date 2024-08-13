@@ -1,0 +1,63 @@
+-- Amazon Data Engineer Que
+--Q- Merge overlapping events in same hall
+
+create table hall_events
+(
+hall_id integer,
+start_date date,
+end_date date
+);
+delete from hall_events
+
+insert into hall_events values 
+(1,'2023-01-13','2023-01-14')
+,(1,'2023-01-14','2023-01-17')
+,(1,'2023-01-15','2023-01-17')
+,(1,'2023-01-18','2023-01-25')
+,(2,'2022-12-09','2022-12-23')
+,(2,'2022-12-13','2022-12-17')
+,(3,'2022-12-01','2023-01-30');
+
+select * from hall_events
+
+------------- ans - 1st create prev_end_date column by lag function and store in cte
+                  -- then filter the data from cte where prev_end_date >= start_date or prev_end_date is null as 1st record of that group
+				  -- we will aggregate the data based on hall_id  -> this will creats grouped records for  prev_end_date >= start_date
+				  -- also ww will consider records where  prev_end_date < start_date and combine both data using union 
+with cte as (
+	select * , lag(end_date,1) over(partition by hall_id ) as prev_end_date
+	from hall_events
+	)
+select hall_id , min(start_date) as start_date , max(end_date) as end_date
+from cte
+where prev_end_date is null or start_date <= prev_end_date
+group by hall_id
+union
+select hall_id , min(start_date) as start_date , max(end_date) as end_date
+from cte
+where  start_date > prev_end_date
+group by hall_id
+
+order by hall_id ,start_date
+
+--------------- or  (using recursive cte)
+
+with recursive cte as (
+select hall_id ,start_date, end_date ,event_id , 1 as flag from cte1 where event_id = 1
+	union all
+select cte1.hall_id ,cte1.start_date, cte1.end_date ,cte1.event_id  
+, case when cte.hall_id = cte1.hall_id and ((cte.start_date between cte1.start_date and cte1.end_date)	or (cte1.start_date between cte.start_date and cte.end_date))
+	then 0 else 1 end  + flag as flag
+	from cte inner join cte1 on cte1.event_id = cte.event_id + 1
+
+)
+,cte1 as (
+select * , row_number() over(order by hall_id , start_date) as event_id
+from hall_events
+	)
+select hall_id , min(start_date) as start_date , max(end_date) as end_date
+from cte
+group by hall_id , flag
+order by hall_id
+
+------------------------------- end
