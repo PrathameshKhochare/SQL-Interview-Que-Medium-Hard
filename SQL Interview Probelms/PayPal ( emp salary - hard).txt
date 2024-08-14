@@ -1,0 +1,58 @@
+/* Q. PayPal SQL Interview (hard)
+Obtain an list of dept with an avg salary lower than overall avg salary of company. 
+however when calculating the company's avg salary, 
+you must exclude the sal of the dept you are comparing it with.
+*/
+
+Here is the ready script:
+create table paypal_emp(
+emp_id int,
+emp_name varchar(20),
+department_id int,
+salary int,
+manager_id int,
+emp_age int);
+
+insert into paypal_emp
+values
+(1, 'Ankit', 100,10000, 4, 39);
+insert into paypal_emp
+values (2, 'Mohit', 100, 15000, 5, 48);
+insert into paypal_emp
+values (3, 'Vikas', 100, 10000,4,37);
+insert into paypal_emp
+values (4, 'Rohit', 100, 5000, 2, 16);
+insert into paypal_emp
+values (5, 'Mudit', 200, 12000, 6,55);
+insert into paypal_emp
+values (6, 'Agam', 200, 12000,2, 14);
+insert into paypal_emp
+values (7, 'Sanjay', 200, 9000, 2,13);
+insert into paypal_emp
+values (8, 'Ashish', 200,5000,2,12);
+insert into paypal_emp
+values (9, 'Mukesh',300,6000,6,51);
+insert into paypal_emp
+values (10, 'Rakesh',300,7000,6,50);
+
+------
+select * from paypal_emp
+
+---- ans  logic - : avg = sum(dept_salary)/count(emp)
+-- as we have to exclude curr_dept while calculating overall_company_avg_sal , we can store count(emp) and sum(salary) for each dept along with avg_sal of each dept in cte
+-- we use self join , with join on dept_id not equal to curr_dept_id , and calculate avg_company_sal by sum(sal) / count(emp) grouped on dept
+-- finally filter the records on condition overall_sal >= dept_sal
+with cte as (
+	select department_id , round(avg(salary)) as avg_sal , count(emp_id) as dept_emp_cnt , sum(salary) as total_dept_salary
+	from paypal_emp
+	group by department_id
+)
+select c1.department_id , max(c1.avg_sal) as dept_avg_sal , round(sum(c2.total_dept_salary) / sum(c2.dept_emp_cnt)) as dept_avg_salary_excluding_current_dep
+from cte c1
+join cte c2
+on c1.department_id != c2.department_id
+group by  c1.department_id --,  c1.avg_sal 
+having  round(sum(c2.total_dept_salary) / sum(c2.dept_emp_cnt)) >= max(c1.avg_sal)
+order by c1.department_id
+
+----------- end
