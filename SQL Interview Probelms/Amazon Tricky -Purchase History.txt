@@ -1,0 +1,46 @@
+-- Tricky Amazon Interview Que
+-- Q. Find users who purchase diff products on diff dates i.e prod purchased on any day not repeated on any other day
+-- also total purchase days should greater than 1
+
+Here is the script:
+
+create table purchase_history
+(userid int
+,productid int
+,purchasedate date
+);
+--SET DATEFORMAT dmy;
+insert into purchase_history values
+(1,1,'2012-01-23')
+,(1,2,'2012-01-23')
+,(1,3,'2012-01-25')
+,(2,1,'2012-01-23')
+,(2,2,'2012-01-23')
+,(2,2,'2012-01-25')
+,(2,4,'2012-01-25')
+,(3,4,'2012-01-23')
+,(3,1,'2012-01-23')
+,(4,1,'2012-01-23')
+,(4,2,'2012-01-25')
+;
+
+select * from purchase_history
+
+------- Ans
+with cte as (
+	select *
+	, dense_rank() over(partition by userid , productid order by purchasedate) as rn
+	from purchase_history
+)
+select userid --, count(distinct purchasedate) as day_cnt
+from cte
+group by userid
+having count(distinct purchasedate) > 1 and max(rn) <= 1
+
+----------or
+select userid --, count(distinct purchasedate) as day_cnt , count(productid) as total_prod ,  count( distinct productid) as total_unique_prod
+from purchase_history
+group by userid
+having count(distinct purchasedate) > 1 and  count(productid) = count( distinct productid)
+
+------------------------ end
