@@ -1,0 +1,79 @@
+-- Pre-screening test interview que for Data Engineer
+-- write a query which has only new_inserts(records in order table but not in copy table) and new_deletes (records in copy table but not in order table)
+--o/p -:
+--order_id   flag
+--1           'D'
+--5            'I'
+--6            'I'
+script: 
+create table tbl_orders (
+order_id integer,
+order_date date
+);
+insert into tbl_orders
+values (1,'2022-10-21'),(2,'2022-10-22'),
+(3,'2022-10-25'),(4,'2022-10-25');
+
+select * into tbl_orders_copy from  tbl_orders;
+
+select * from tbl_orders_copy;
+
+insert into tbl_orders
+values (5,'2022-10-26'),(6,'2022-10-26');
+
+select * from tbl_orders
+
+delete from tbl_orders where order_id=1;
+
+
+--------------------- union
+with cte as (
+select order_id , 'I' as flag
+from tbl_orders o
+union 
+select order_id , 'D' as flag
+from tbl_orders_copy c
+--order by flag ,order_id
+)
+select order_id , max(flag) as flag
+from cte
+group by order_id
+having count(flag) = 1
+
+--------------------------------------- using union
+select o.order_id , 'I' as flag
+from tbl_orders o
+left join tbl_orders_copy c
+on o.order_id = c.order_id
+where c.order_id is null
+union 
+select c.order_id , 'D' as flag
+from tbl_orders_copy  c
+left join tbl_orders o
+on o.order_id = c.order_id
+where o.order_id is null
+order by order_id
+
+----------- or using full outer join
+select *
+from(
+select coalesce(o.order_id ,c.order_id) as order_id
+, case when c.order_id is null then 'I' 
+      when o.order_id is null then 'D' 
+  end as flag
+from tbl_orders o
+full outer join tbl_orders_copy c
+on o.order_id = c.order_id
+)x
+where flag is not null
+
+
+------------------- using not exists
+select * from (select order_id, 
+case when not exists (select 1 from tbl_orders_copy c where c.order_id = o.order_id) then 'I' else null end flag
+from tbl_orders o 
+union all
+select order_id, 
+case when not exists (select 1 from tbl_orders o  where c.order_id = o.order_id) then 'D' else null end flag
+from tbl_orders_copy c) x where x.flag is not null
+----------------------------------- end
