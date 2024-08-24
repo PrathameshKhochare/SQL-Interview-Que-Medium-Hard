@@ -1,0 +1,35 @@
+--Que SQL query to find out total amount by each merchant via cash and online mode---
+--table
+
+create table SALE (merchant varchar, amount int, pay_mode varchar);
+
+insert into SALE values('merchant_1',150,'cash');
+insert into SALE values('merchant_1',500,'online');
+insert into SALE values('merchant_2',450,'online');
+insert into SALE values('merchant_1',100,'cash');
+insert into SALE values('merchant_3',600,'cash');
+insert into SALE values('merchant_5',200,'online');
+insert into SALE values('merchant_2',100,'online');
+
+select * from sale;
+
+--------
+Ans
+
+select merchant,
+sum(case when pay_mode like 'cash' then amount else 0 end) as cash_amount,
+sum(case when pay_mode like 'online' then amount else 0 end) as online_amount
+from sale
+group by merchant
+order by merchant
+
+----------- or 
+with online_table as 
+(select Merchant, sum(Amount) as Online_Amount from sale where Pay_mode = 'Online'
+group by Merchant)
+,cash_table as 
+(select Merchant, sum(Amount) as Cash_Amount from sale 
+where Pay_mode = 'Cash'
+group by Merchant)
+select ot.Merchant,ot.Online_Amount,ct.Cash_Amount from online_table ot left join cash_table ct 
+on ot.Merchant = ct.Merchant;
