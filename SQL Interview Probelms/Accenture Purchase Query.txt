@@ -1,0 +1,58 @@
+-- Q. Customers Who Made Purchases on at Least Three Consecutive Days
+
+CREATE TABLE accenture_purchases (
+    purchase_id INT PRIMARY KEY,
+    customer_id INT,
+    purchase_date DATE
+);
+
+
+INSERT INTO accenture_purchases (purchase_id, customer_id, purchase_date) VALUES
+(1, 101, '2024-08-01'),
+(2, 101, '2024-08-02'),
+(3, 101, '2024-08-03'),
+(4, 101, '2024-08-05'),
+(5, 102, '2024-08-01'),
+(6, 102, '2024-08-02'),
+(7, 102, '2024-08-04'),
+(8, 103, '2024-08-01'),
+(9, 103, '2024-08-02'),
+(10, 103, '2024-08-03'),
+(11, 103, '2024-08-04'),
+(12, 104, '2024-08-01'),
+(13, 104, '2024-08-03'),
+(14, 104, '2024-08-04'),
+(15, 105, '2024-08-02'),
+(16, 105, '2024-08-03'),
+(17, 105, '2024-08-04'),
+(18, 105, '2024-08-05');
+
+select * from accenture_purchases
+
+WITH consecutive_purchases AS (
+    SELECT 
+        customer_id,
+        purchase_date,
+	--,ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY purchase_date) as rn
+        purchase_date - INTERVAL '1 day' * ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY purchase_date) AS group_id
+    FROM 
+        accenture_purchases
+),
+grouped_purchases AS (
+    SELECT 
+        customer_id,
+        COUNT(*) AS consecutive_days
+    FROM 
+        consecutive_purchases
+    GROUP BY 
+        customer_id,
+        group_id
+    HAVING 
+        COUNT(*) >= 3
+)
+SELECT DISTINCT 
+    customer_id
+FROM 
+    grouped_purchases;
+	
+------------------------- end
