@@ -1,0 +1,81 @@
+--Q. Write a SQL query as per below output ( give grades to name as per grades nearer to marks by grade table )
+/*
+output table
+name     marks     grades
+nitin     86         A+
+pranshu   78         A
+rohan     64         C
+Vijay     68         B
+divya     72         B
+sonam     99         A+
+*/
+
+-- Create the Grades table
+CREATE TABLE Grades (
+    Grades VARCHAR(2), 
+    Marks INT
+);
+
+-- Create the Student table
+CREATE TABLE Student (
+    Rollno INT PRIMARY KEY, 
+    name VARCHAR(50), 
+    marks INT
+);
+
+-- Insert data into the Grades table
+INSERT INTO Grades (Grades, Marks) VALUES
+('A+', 90),
+('A', 80),
+('B', 70),
+('C', 60);
+
+-- Insert data into the Student table
+INSERT INTO Student (Rollno, name, marks) VALUES
+(1, 'nitin', 86),
+(2, 'pranshu', 78),
+(3, 'rohan', 64),
+(4, 'Vijay', 68),
+(5, 'divya', 72),
+(6, 'sonam', 99);
+
+select * from Grades
+select * from Student
+		   
+---------------- ans
+SELECT 
+    s.name,
+    s.marks,
+    CASE
+        -- When marks are closer to the upper threshold (within 5 marks below it) --eg 64 -> c grade
+        WHEN s.marks >= g.Marks AND s.marks < g.Marks + 5 THEN g.Grades
+        -- When marks are closer to the next grade, assign the upper grade   -- eg 86 -> A+  
+        WHEN s.marks >= g.Marks + 5 AND s.marks < (SELECT MIN(Marks) FROM Grades WHERE Marks > g.Marks) THEN 
+            (SELECT Grades FROM Grades WHERE Marks = g.Marks + 10)
+        -- If marks exceed the highest grade threshold, keep the highest grade
+        WHEN s.marks >= (SELECT MAX(Marks) FROM Grades) THEN 
+            (SELECT Grades FROM Grades WHERE Marks = (SELECT MAX(Marks) FROM Grades))
+        ELSE g.Grades
+    END AS Grades
+FROM 
+    Student s
+JOIN 
+    Grades g 
+ON 
+    s.marks >= g.Marks
+WHERE 
+    g.Marks = (SELECT MAX(Marks) 
+               FROM Grades 
+               WHERE s.marks >= Marks);
+
+----------- or (simple query)
+select name , marks
+, case when marks >= 85 then 'A+'
+       when marks >= 75 then 'A'
+	   when marks >= 65 then 'B'
+	   else 'C'
+  end as grade
+from Student 
+
+
+------------------- end
