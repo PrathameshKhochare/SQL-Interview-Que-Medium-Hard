@@ -1,0 +1,47 @@
+--Que - Write query to find employees who bought a product for least 3 consecutive days 
+
+CREATE TABLE purchase (
+    empid INT,
+    purchasedate DATE
+);
+
+INSERT INTO purchase (empid, purchasedate) VALUES
+(1, '2024-08-01'),
+(1, '2024-08-02'),
+(1, '2024-08-03'),
+(2, '2024-08-01'),
+(2, '2024-08-03'),
+(3, '2024-08-02'),
+(3, '2024-08-03'),
+(3, '2024-08-04'),
+(4, '2024-08-02');
+
+---------------- (using row_number and grouping)
+with cte as (
+select * , row_number() over(partition by empid order by purchasedate ) as rn
+, extract(day from purchasedate)::int - row_number() over(partition by empid order by purchasedate ) as diff
+from purchase
+)
+select empid
+from cte
+group by empid
+having count(diff) >= 3
+
+------------ or (using self join)
+select distinct p1.empid
+from purchase p1
+join purchase p2 on p1.empid = p2.empid and p1.purchasedate + interval '1 day' = p2.purchasedate
+join purchase p3 on p2.empid = p3.empid and p2.purchasedate + interval '1 day' = p3.purchasedate
+
+-------------- (using lead-lag)
+with cte as (
+select *
+, lead(purchasedate , 1) over(partition by empid order by purchasedate) as next_day
+, lead(purchasedate , 2) over(partition by empid order by purchasedate) as next_next__day
+from purchase
+)
+select distinct empid
+from cte
+where purchasedate is not null and next_day is not null and  next_next__day is not null
+
+-------------- end
