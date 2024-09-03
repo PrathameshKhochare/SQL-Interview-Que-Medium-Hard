@@ -1,0 +1,307 @@
+Q1. Write a SQL query to find the second highest salary from the table
+emp. (Column name – id, salary)
+-----------------------------------
+Ans-
+SELECT MAX(salary) AS second_highest_salary
+FROM emp
+WHERE salary < (SELECT MAX(salary) FROM emp);
+
+=======================================================
+
+Q.2 - Write a SQL query to find the numbers which consecutively occurs 3
+times. (Column name – id, numbers)
+------------
+Ans-
+SELECT DISTINCT numbers
+FROM (
+    SELECT numbers,
+           LAG(numbers, 1) OVER (ORDER BY id) AS prev_num,
+           LEAD(numbers, 1) OVER (ORDER BY id) AS next_num
+    FROM emp
+) AS consecutive_numbers
+WHERE numbers = prev_num AND numbers = next_num;
+
+======================================================
+
+Q.3 - Write a SQL query to find the days when temperature was higher
+than its previous dates. (Column name – Days, Temp)
+--------------------
+Ans - 
+SELECT Days, Temp
+FROM (
+    SELECT Days, 
+           Temp, 
+           LAG(Temp) OVER (ORDER BY Days) AS prev_temp
+    FROM weather
+) AS temp_comparison
+WHERE Temp > prev_temp;
+
+========================================
+
+q.4 - Write a SQL query to delete Duplicate rows in a table.
+-----------
+Ans -
+WITH CTE AS (
+    SELECT 
+        id,
+        ROW_NUMBER() OVER (PARTITION BY column1, column2, column3 ORDER BY id) AS row_num
+    FROM your_table
+)
+DELETE FROM your_table
+WHERE id IN (
+    SELECT id FROM CTE WHERE row_num > 1
+);
+
+========================================
+
+Q.5- Write a SQL query for cumulative sum of salary of each employee
+from Jan to July. (Column name – Emp_id, Month, Salary)
+-------------------
+Ans -
+
+To calculate the cumulative sum of salary for each employee from January to July, you can use the SUM() window function with a partition by Emp_id and an order by Month. Here's how you can write the SQL query:
+
+sql
+Copy code
+SELECT 
+    Emp_id,
+    Month,
+    Salary,
+    SUM(Salary) OVER (PARTITION BY Emp_id ORDER BY Month) AS cumulative_salary
+FROM 
+    emp_salaries
+WHERE 
+    Month BETWEEN '2024-01-01' AND '2024-07-31'
+ORDER BY 
+    Emp_id, Month;
+
+==================================================
+
+Q.6 - Write a SQL query to display year on year growth for each product.
+(Column name – transaction_id, Product_id, transaction_date, spend).
+Output will have year, product_id & yoy_growth.
+----------------
+Ans -
+WITH yearly_spend AS (
+    SELECT 
+        EXTRACT(YEAR FROM transaction_date) AS year,
+        Product_id,
+        SUM(spend) AS total_spend
+    FROM 
+        transactions
+    GROUP BY 
+        EXTRACT(YEAR FROM transaction_date), Product_id
+),
+yoy_growth AS (
+    SELECT 
+        year,
+        Product_id,
+        total_spend,
+        LAG(total_spend) OVER (PARTITION BY Product_id ORDER BY year) AS prev_year_spend
+    FROM 
+        yearly_spend
+)
+SELECT 
+    year,
+    Product_id,
+    ROUND(((total_spend - prev_year_spend) / prev_year_spend) * 100, 2) AS yoy_growth
+FROM 
+    yoy_growth
+WHERE 
+    prev_year_spend IS NOT NULL
+ORDER BY 
+    Product_id, year;
+
+========================================================
+
+Q.7 - Write a SQL query to find rolling average of posts on daily basis for
+each user_id.(Column_name – user_id, date, post_count). Round up
+the average upto two decimal places
+-----------------------
+Ans -
+SELECT 
+    user_id,
+    date,
+    post_count,
+    ROUND(
+        AVG(post_count) OVER (
+            PARTITION BY user_id 
+            ORDER BY date 
+            ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+        ), 2
+    ) AS rolling_avg
+FROM 
+    user_posts
+ORDER BY 
+    user_id, date;
+
+=================================================
+
+Q.8 - Write a SQL query to get emp id and department for each
+department who recently joined the organization and still in working.
+(column - emp id, first name, last name, date of join, date of exit ,
+department.)
+----------------------
+Ans -
+SELECT 
+    department,
+    emp_id,
+    first_name,
+    last_name,
+    date_of_join
+FROM 
+    employees
+WHERE 
+    date_of_exit IS NULL
+    AND (department, date_of_join) IN (
+        SELECT 
+            department, 
+            MAX(date_of_join)
+        FROM 
+            employees
+        WHERE 
+            date_of_exit IS NULL
+        GROUP BY 
+            department
+    )
+ORDER BY 
+    department, emp_id;
+
+========================================
+
+Q-9 - How many rows will come in outputs of Left, Right, Inner and outer
+join from two tables having duplicate rows.
+For Example:-
+Left table AColumn
+1
+1
+1
+2
+2
+3
+4
+5
+Right table BColumn
+1
+1
+2
+2
+2
+3
+3
+3
+4
+-------------
+Ans -
+1. INNER JOIN:
+1 from AColumn matches with both 1 from BColumn (3x2 = 6 rows).
+2 from AColumn matches with all three 2s from BColumn (2x3 = 6 rows).
+3 from AColumn matches with all three 3s from BColumn (1x3 = 3 rows).
+4 from AColumn matches with 4 from BColumn (1x1 = 1 row).
+5 from AColumn has no match in BColumn and hence won't appear in the result.
+Total Rows in INNER JOIN: 6 + 6 + 3 + 1 = 16 rows
+
+-----
+2. LEFT JOIN:
+1 from AColumn matches with both 1s from BColumn (6 rows as in INNER JOIN).
+2 from AColumn matches with all three 2s from BColumn (6 rows as in INNER JOIN).
+3 from AColumn matches with all three 3s from BColumn (3 rows as in INNER JOIN).
+4 from AColumn matches with 4 from BColumn (1 row as in INNER JOIN).
+5 from AColumn has no match in BColumn, so it adds 1 row with NULL in the result.
+Total Rows in LEFT JOIN: 16 (from INNER JOIN) + 1 (for 5withNULL match) = 17 rows
+
+------
+3. RIGHT JOIN:
+Matching rows for 1, 2, 3, and 4 are the same as in INNER JOIN (16 rows).
+Since all values from BColumn have corresponding matches in AColumn, the number of rows remains the same as the INNER JOIN.
+Total Rows in RIGHT JOIN: 16 rows
+
+--------
+4. FULL OUTER JOIN:
+Matching rows for 1, 2, 3, and 4 are the same as in INNER JOIN (16 rows).
+Additionally, 5 from AColumn and all unmatched NULL values from BColumn.
+Total Rows in FULL OUTER JOIN: 16 (from INNER JOIN) + 1 (for 5withNULL match) = 17 rows
+
+
+=========================================
+
+Q- 10 - Write a query to get mean, median and mode for earning? (Column
+– Emp_id, salary)
+--------------------
+Ans
+WITH stats AS (
+    SELECT 
+        salary,
+        COUNT(*) OVER () AS total_count,
+        ROW_NUMBER() OVER (ORDER BY salary) AS row_num,
+        COUNT(salary) OVER (PARTITION BY salary) AS freq
+    FROM 
+        employees
+)
+SELECT 
+    ROUND(AVG(salary), 2) AS mean,
+    ROUND(
+        PERCENTILE_CONT(0.5) 
+        WITHIN GROUP (ORDER BY salary) 
+        OVER (), 2
+    ) AS median,
+    MAX(salary) AS mode
+FROM 
+    stats
+WHERE 
+    freq = (SELECT MAX(freq) FROM stats);
+
+
+note - The mode calculation assumes that there is a single most frequent value. If there are multiple modes, this query will return the highest salary among them.
+
+Handling multiple modes -
+WITH salary_freq AS (
+    SELECT 
+        salary,
+        COUNT(*) AS freq
+    FROM 
+        employees
+    GROUP BY 
+        salary
+),
+max_freq AS (
+    SELECT 
+        MAX(freq) AS highest_freq
+    FROM 
+        salary_freq
+)
+SELECT 
+    salary AS mode
+FROM 
+    salary_freq, max_freq
+WHERE 
+    freq = highest_freq;
+
+
+=============================================== end
+
+Q. 10 -
+Given:
+Table X:
+Columns: ids with values 1, 1, 1, 1
+Table Y:
+Columns: ids with values 1, 1, 1, 1, 1, 1, 1, 1
+Task: Determine the count of rows in the output of the following
+queries:
+Select * From X join Y on X.ids != Y.ids
+Select * From X left join Y on X.ids != Y.ids
+Select * From X right join Y on X.ids != Y.ids
+Select * From X full outer join Y on X.ids != Y.ids
+
+---------- Ans
+1. INNER JOIN: Count of Rows in INNER JOIN: 0 rows
+2. LEFT JOIN:Count of Rows in LEFT JOIN: 4 rows (All rows from X, each with NULLs for Y columns)
+3. RIGHT JOIN:Count of Rows in RIGHT JOIN: 8 rows (All rows from Y, each with NULLs for X columns)
+4. FULL OUTER JOIN:Count of Rows in FULL OUTER JOIN: 4 (from X) + 8 (from Y) = 12 rows
+
+
+====================================end
+
+===========================================end
+
+
