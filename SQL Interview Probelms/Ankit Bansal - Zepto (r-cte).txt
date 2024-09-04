@@ -1,0 +1,48 @@
+-- Zepto Interview Que
+-- create records of nos with count of no times that no (i.e 1 2 2 3 3 3 4 4 4 4...)
+
+script:
+--drop table if exists numbers 
+create table numbers (n int);
+insert into numbers values (1),(2),(3),(4),(5)
+insert into numbers values (9)
+
+select * from numbers
+
+-------- using recursive cte
+with recursive cte as (
+select n  , 1 as num_counter from numbers
+union all
+select n  , num_counter + 1 from cte
+where num_counter+1 <= n
+)
+select n from cte
+order by n ,num_counter
+
+------------------ using generate_series
+select n , generate_series(1,n)  as num
+from numbers
+group by n
+order by n , num
+
+---------------- using self join ( self join method not works if we add discontineous no like 9)
+select *
+from numbers n1
+join numbers n2
+on 1=1
+where n1.n >= n2.n
+
+----------- modification 
+with recursive cte as (
+select max(n) as n from numbers
+union all
+select n - 1 from cte
+where n - 1 >= 1
+)
+select n1.n
+from numbers n1
+join cte on 1=1
+where n1.n >= cte.n
+order by n1.n
+
+--------------------- end
