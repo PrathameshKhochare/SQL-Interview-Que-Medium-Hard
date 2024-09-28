@@ -1,0 +1,33 @@
+/* Regex based Interview que
+Q. A column contains list of phone nos as keyed in by users. You are supposed to find only those nos 
+which don't have any repeating no.
+*/
+
+script:
+create table phone_numbers (num varchar(20));
+insert into phone_numbers values
+('1234567780'),
+('2234578996'),
+('+1-12244567780'),
+('+32-2233567889'),
+('+2-23456987312'),
+('+91-9087654123'),
+('+23-9085761324'),
+('+11-8091013345');
+
+- ---------- ans
+------- we will use split_part to split num by '-' and take 2nd part of that split ,if '-' not present in num else take whole num
+with cte as (
+	select * ,case when position('-'in num) = 0 then num else split_part(num,'-',2) end as new_num
+	from phone_numbers
+)
+select num  
+--,new_num,count(digits) as total_digits , count(distinct digits) as unique_nos
+from (
+select *, regexp_split_to_table(new_num,'') as digits
+from cte
+)x
+group by num ,new_num
+having count(digits) = count(distinct digits)
+
+------------------------end
