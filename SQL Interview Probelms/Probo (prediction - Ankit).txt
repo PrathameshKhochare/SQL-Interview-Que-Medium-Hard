@@ -1,0 +1,73 @@
+/*Probo Interview Que -
+we have event and options to predict the outcome of event, 4 options are there.
+Money invested in incorrect options should be proportionally distributed amongst users who invested money in correct option of event.
+for eg if total money invested in option A,B,D is Rs 1500 and there are 3 users who invested 500 in option C (250,200 and 50) where C is correct option
+these users will receive (750,600 and 150 resp) - sum = 1500
+
+Write an SQL query
+*/
+
+script:
+create table polls
+(
+user_id varchar(4),
+poll_id varchar(3),
+poll_option_id varchar(3),
+amount int,
+created_date date
+)
+-- Insert sample data into the investments table
+INSERT INTO polls (user_id, poll_id, poll_option_id, amount, created_date) VALUES
+('id1', 'p1', 'A', 200, '2021-12-01'),
+('id2', 'p1', 'C', 250, '2021-12-01'),
+('id3', 'p1', 'A', 200, '2021-12-01'),
+('id4', 'p1', 'B', 500, '2021-12-01'),
+('id5', 'p1', 'C', 50, '2021-12-01'),
+('id6', 'p1', 'D', 500, '2021-12-01'),
+('id7', 'p1', 'C', 200, '2021-12-01'),
+('id8', 'p1', 'A', 100, '2021-12-01'),
+('id9', 'p2', 'A', 300, '2023-01-10'),
+('id10', 'p2', 'C', 400, '2023-01-11'),
+('id11', 'p2', 'B', 250, '2023-01-12'),
+('id12', 'p2', 'D', 600, '2023-01-13'),
+('id13', 'p2', 'C', 150, '2023-01-14'),
+('id14', 'p2', 'A', 100, '2023-01-15'),
+('id15', 'p2', 'C', 200, '2023-01-16');
+
+create table poll_answers
+(
+poll_id varchar(3),
+correct_option_id varchar(3)
+)
+
+-- Insert sample data into the poll_answers table
+INSERT INTO poll_answers (poll_id, correct_option_id) VALUES
+('p1', 'C'),('p2', 'A');
+
+-------
+select * from poll_answers;
+select * from polls;
+
+with corr_pred as (
+select p.poll_id ,q.user_id , sum(q.amount) as corr_pred_amount
+from poll_answers p
+left join polls q
+on p.poll_id = q.poll_id and p.correct_option_id = q.poll_option_id
+group by p.poll_id , q.user_id
+order by p.poll_id , q.user_id
+)
+,incorrect_pred as (
+select p.poll_id , sum(q.amount) as incorr_pred_amount
+from poll_answers p
+left join polls q
+on p.poll_id = q.poll_id and p.correct_option_id != q.poll_option_id
+group by p.poll_id 
+order by p.poll_id 
+)
+--select * from corr_pred
+select c.poll_id,c.user_id , round(corr_pred_amount/sum(corr_pred_amount) over(partition by c.poll_id),2) * i.incorr_pred_amount as total_amt_win
+from corr_pred c
+join incorrect_pred i
+on c.poll_id = i.poll_id 
+
+--------------------- end
