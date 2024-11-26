@@ -1,0 +1,76 @@
+
+================================================================
+
+--Q EPAM SQL que
+/* 
+Write an SQL query that , for each experience level counts the total no of candidates and how many of them got a perfect score in each category 
+which they requested to solve tasks (a null means the candidate was not requested to solve task in that category)
+*/
+
+scripts:
+create table assessments
+(
+id int,
+experience int,
+sql int,
+algo int,
+bug_fixing int
+)
+delete from assessments;
+insert into assessments values 
+(1,3,100,null,50),
+(2,5,null,100,100),
+(3,1,100,100,100),
+(4,5,100,50,null),
+(5,5,100,100,100)
+
+delete from assessments;
+insert into assessments values 
+(1,2,null,null,null),
+(2,20,null,null,20),
+(3,7,100,null,100),
+(4,3,100,50,null),
+(5,2,40,100,100);
+
+
+-------------
+select * from assessments
+
+with cte as (
+select *
+, case when sql is null or sql = 100 then 1 else 0 end as sql_perfect
+, case when algo is null or algo = 100 then 1 else 0 end as algo_perfect
+, case when bug_fixing is null or bug_fixing = 100 then 1 else 0 end as bug_fixing_perfect
+from assessments
+)
+select experience , count(id) as total_candidates
+, sum(case when sql_perfect = 1 and algo_perfect = 1 and bug_fixing_perfect = 1 then 1 else 0 end) as allover_can
+from cte
+group by experience
+order by experience
+
+------------ ans - using Union all
+with cte as (
+select id ,experience , sql as score , 'sql' as subject 
+from assessments
+union all
+select id ,experience , algo as score , 'algo' as subject 
+from assessments
+union all
+select id, experience , bug_fixing as score , 'bug_fixing' as subject 
+from assessments
+	)
+--select * from cte
+,cte2 as (
+select  id, experience --, count(*) as total_candidates 
+,case when sum(case when score is null or score = 100 then 1 else 0 end) = 3 then 1 else 0 end as total_score_cnt
+from cte
+group by  id , experience
+--order by id , experience
+	)
+select experience , count(id) as total_candidates , sum(total_score_cnt) as total_perfect_candidates
+from cte2
+group by experience
+order by experience
+
+------------------- end
