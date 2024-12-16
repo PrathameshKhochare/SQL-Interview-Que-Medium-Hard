@@ -1,0 +1,75 @@
+-- Infosys Interview Que
+--We need to find origin and final destination details
+
+--Create table syntax
+CREATE TABLE Infy_Flights (cust_id INT, flight_id VARCHAR(10), origin VARCHAR(50), destination VARCHAR(50));
+
+-- Insert data into the table
+INSERT INTO Infy_Flights (cust_id, flight_id, origin, destination)
+VALUES (1, 'SG1234', 'Delhi', 'Hyderabad'),
+        (1, 'SG3476', 'Kochi', 'Mangalore'),
+        (1, '69876', 'Hyderabad', 'Kochi'),
+		(2, '68749', 'Mumbai', 'Varanasi'), 
+		(2, 'SG5723', 'Varanasi', 'Delhi');
+
+select * from Infy_Flights
+
+select f1.cust_id , min(f1.origin) as flight_origin , max(f2.destination) as flight_dest 
+from Infy_Flights f1
+join Infy_Flights f2
+on f1.cust_id = f2.cust_id and f1.destination  = f2.origin
+where f2.destination != f2.origin
+group by f1.cust_id
+
+with origin_table as (
+	select f1.cust_id , f1.origin
+	from Infy_Flights f1
+	left join Infy_Flights f2
+	on f1.cust_id = f2.cust_id and f1.origin   = f2.destination
+	where  f2.destination is null
+)
+,dest_table as (
+	select f1.cust_id , f1.destination
+	from Infy_Flights f1
+	left join Infy_Flights f2
+	on f1.cust_id = f2.cust_id and f1.destination  = f2.origin
+	where  f2.origin is null
+)
+select o.cust_id , o.origin , d.destination
+from origin_table o
+join dest_table d
+on o.cust_id = d.cust_id
+
+
+------------------ or (using union)
+
+with grp_loc as (
+select cust_id , origin as loc ,'start_loc' as loc_type
+from Infy_Flights
+union
+select cust_id , destination as loc ,'end_loc' as loc_type
+from Infy_Flights
+)
+, filtered_loc as (
+select cust_id ,loc, max(loc_type) as loc_type
+from grp_loc
+group by cust_id , loc 
+having count(loc) = 1
+)
+select cust_id 
+, max(case when loc_type = 'start_loc' then loc end) as start_loc_point
+, max(case when loc_type = 'end_loc' then loc end) as end_loc_point
+from filtered_loc
+group by cust_id
+
+----------------------- or (simplified solution)
+
+select f.cust_id 
+, min(case when f1.destination is null then f.origin end) as source_point
+, min(case when f2.origin is null then f.destination end) as dest_point
+from Infy_Flights f
+left join Infy_Flights f1 on f.cust_id = f1.cust_id and f.origin = f1.destination
+left join Infy_Flights f2 on f.cust_id = f2.cust_id and f.destination  = f2.origin
+group by f.cust_id
+
+==================== end
